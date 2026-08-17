@@ -85,6 +85,48 @@ export type Database = {
           },
         ]
       }
+      cart_items: {
+        Row: {
+          cart_id: string
+          created_at: string | null
+          id: string
+          quantity: number
+          store_product_variant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          cart_id: string
+          created_at?: string | null
+          id?: string
+          quantity: number
+          store_product_variant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          cart_id?: string
+          created_at?: string | null
+          id?: string
+          quantity?: number
+          store_product_variant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "carts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_store_product_variant_id_fkey"
+            columns: ["store_product_variant_id"]
+            isOneToOne: false
+            referencedRelation: "store_product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       carts: {
         Row: {
           created_at: string | null
@@ -457,6 +499,48 @@ export type Database = {
           },
         ]
       }
+      master_product_media: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean
+          master_product_id: string
+          media_asset_id: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          master_product_id: string
+          media_asset_id: string
+          position?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          master_product_id?: string
+          media_asset_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "master_product_media_master_product_id_fkey"
+            columns: ["master_product_id"]
+            isOneToOne: false
+            referencedRelation: "master_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "master_product_media_media_asset_id_fkey"
+            columns: ["media_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       master_product_variants: {
         Row: {
           cost_price: number
@@ -532,6 +616,50 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_assets: {
+        Row: {
+          asset_type: Database["public"]["Enums"]["media_asset_type"]
+          created_at: string
+          external_url: string | null
+          id: string
+          metadata: Json
+          organization_id: string | null
+          source_type: Database["public"]["Enums"]["media_source_type"]
+          storage_path: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_type: Database["public"]["Enums"]["media_asset_type"]
+          created_at?: string
+          external_url?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string | null
+          source_type: Database["public"]["Enums"]["media_source_type"]
+          storage_path?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_type?: Database["public"]["Enums"]["media_asset_type"]
+          created_at?: string
+          external_url?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string | null
+          source_type?: Database["public"]["Enums"]["media_source_type"]
+          storage_path?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_assets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1143,6 +1271,48 @@ export type Database = {
           },
         ]
       }
+      store_media: {
+        Row: {
+          created_at: string
+          id: string
+          media_asset_id: string
+          position: number
+          purpose: Database["public"]["Enums"]["store_media_purpose"]
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          media_asset_id: string
+          position?: number
+          purpose: Database["public"]["Enums"]["store_media_purpose"]
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          media_asset_id?: string
+          position?: number
+          purpose?: Database["public"]["Enums"]["store_media_purpose"]
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_media_media_asset_id_fkey"
+            columns: ["media_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_media_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_product_variants: {
         Row: {
           compare_at_price: number | null
@@ -1245,6 +1415,125 @@ export type Database = {
           },
         ]
       }
+      store_settings: {
+        Row: {
+          commerce: Json
+          created_at: string
+          design: Json
+          identity: Json
+          marketing: Json
+          store_id: string
+          tracking: Json
+          updated_at: string
+        }
+        Insert: {
+          commerce?: Json
+          created_at?: string
+          design?: Json
+          identity?: Json
+          marketing?: Json
+          store_id: string
+          tracking?: Json
+          updated_at?: string
+        }
+        Update: {
+          commerce?: Json
+          created_at?: string
+          design?: Json
+          identity?: Json
+          marketing?: Json
+          store_id?: string
+          tracking?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_template_configs: {
+        Row: {
+          commerce_bindings: Json
+          content_bindings: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          store_id: string
+          style_tokens: Json
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          commerce_bindings?: Json
+          content_bindings?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          store_id: string
+          style_tokens?: Json
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          commerce_bindings?: Json
+          content_bindings?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          store_id?: string
+          style_tokens?: Json
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_template_configs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_template_configs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "store_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_templates: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          structure: Json
+          type: Database["public"]["Enums"]["store_template_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          structure?: Json
+          type: Database["public"]["Enums"]["store_template_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          structure?: Json
+          type?: Database["public"]["Enums"]["store_template_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stores: {
         Row: {
           created_at: string | null
@@ -1307,6 +1596,105 @@ export type Database = {
         }
         Relationships: []
       }
+      tracking_events: {
+        Row: {
+          created_at: string
+          event_type: Database["public"]["Enums"]["tracking_event_type"]
+          id: string
+          payload: Json
+          session_id: string
+          store_id: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: Database["public"]["Enums"]["tracking_event_type"]
+          id?: string
+          payload?: Json
+          session_id: string
+          store_id: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["tracking_event_type"]
+          id?: string
+          payload?: Json
+          session_id?: string
+          store_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_tracking_event_session"
+            columns: ["session_id", "store_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_sessions"
+            referencedColumns: ["id", "store_id"]
+          },
+          {
+            foreignKeyName: "tracking_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracking_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracking_sessions: {
+        Row: {
+          id: string
+          referrer: string | null
+          started_at: string
+          store_id: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          visitor_id: string
+        }
+        Insert: {
+          id?: string
+          referrer?: string | null
+          started_at?: string
+          store_id: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id: string
+        }
+        Update: {
+          id?: string
+          referrer?: string | null
+          started_at?: string
+          store_id?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_sessions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string | null
@@ -1336,9 +1724,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_checkout: {
+        Args: {
+          p_cart_id: string
+          p_customer_id: string
+          p_guest_token_hash: string
+          p_store_id: string
+        }
+        Returns: string
+      }
+      expire_checkout: { Args: { p_checkout_id: string }; Returns: boolean }
       has_org_role: {
         Args: { p_organization_id: string; p_roles: string[] }
         Returns: boolean
+      }
+      is_master_product_published: {
+        Args: { p_master_product_id: string }
+        Returns: boolean
+      }
+      is_store_active: { Args: { p_store_id: string }; Returns: boolean }
+      merge_guest_cart: {
+        Args: {
+          p_customer_id: string
+          p_guest_cart_id: string
+          p_guest_token_hash: string
+          p_store_id: string
+        }
+        Returns: string
       }
       reserve_stock_atomic: {
         Args: {
@@ -1386,6 +1798,8 @@ export type Database = {
         | "CHARGEBACK_FEE"
         | "PAYOUT"
         | "ADJUSTMENT"
+      media_asset_type: "IMAGE" | "VIDEO"
+      media_source_type: "UPLOAD" | "EXTERNAL" | "MARKETPLACE" | "GENERATED"
       order_status:
         | "PENDING_PAYMENT"
         | "PAID"
@@ -1411,6 +1825,18 @@ export type Database = {
         | "RELEASED"
         | "EXPIRED"
         | "CANCELLED"
+      store_media_purpose: "LOGO" | "FAVICON" | "BANNER" | "PROMOTIONAL"
+      store_template_type:
+        | "STORE"
+        | "HOME"
+        | "COLLECTION"
+        | "PRODUCT"
+        | "SALES_PAGE"
+      tracking_event_type:
+        | "page_view"
+        | "product_view"
+        | "add_to_cart"
+        | "click"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1570,6 +1996,8 @@ export const Constants = {
         "PAYOUT",
         "ADJUSTMENT",
       ],
+      media_asset_type: ["IMAGE", "VIDEO"],
+      media_source_type: ["UPLOAD", "EXTERNAL", "MARKETPLACE", "GENERATED"],
       order_status: [
         "PENDING_PAYMENT",
         "PAID",
@@ -1597,6 +2025,20 @@ export const Constants = {
         "RELEASED",
         "EXPIRED",
         "CANCELLED",
+      ],
+      store_media_purpose: ["LOGO", "FAVICON", "BANNER", "PROMOTIONAL"],
+      store_template_type: [
+        "STORE",
+        "HOME",
+        "COLLECTION",
+        "PRODUCT",
+        "SALES_PAGE",
+      ],
+      tracking_event_type: [
+        "page_view",
+        "product_view",
+        "add_to_cart",
+        "click",
       ],
     },
   },

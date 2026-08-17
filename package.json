@@ -1,0 +1,28 @@
+{
+  "name": "pub-ecom",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "npx tsx tests/foundation.test.ts && npx tsx tests/identity.test.ts && npx tsx tests/tenant.test.ts && npx tsx tests/catalog.test.ts && npx tsx tests/media.test.ts && npx tsx tests/commerce.test.ts && npx tsx tests/routing.test.ts && npx tsx tests/checkout.test.ts && npx tsx tests/api_checkout.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.109.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/pg": "^8.21.0",
+    "@types/ws": "^8.18.1",
+    "pg": "^8.23.0",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2",
+    "ws": "^8.21.3"
+  }
+}
