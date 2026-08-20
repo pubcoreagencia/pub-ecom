@@ -50,3 +50,10 @@ Todo o sistema foi erguido com a dupla validação do princípio de Defesa em Pr
 **Database RLS** (As Roles do PostgREST que forçam o Row Level Security impenetrável diretamente no cluster)
 `=` 
 **Defense in Depth**
+
+## 5. Specific Enforcement Mechanisms (Phase 3.9)
+- **CORS**: Dynamically managed to respect `ALLOWED_ORIGINS` bound via environment variables.
+- **Anonymous HTTP Privileges**: Explicit `EXECUTE` and `SELECT` GRANTS mapped securely to `anon` strictly required for external Edge HTTP API actions (e.g., retrieving catalog, calling `create_checkout`).
+- **RPC Security**: Stored procedures (like `create_checkout`) heavily depend on `SECURITY DEFINER` with rigid parameter enforcement internally, isolating complex orchestration without exposing internal state to `anon`.
+- **Checkout Security**: Enforces expiration constraints, guest-token hashing, and race-condition prevention purely isolated via transactions on the backend.
+- **Secret Handling**: Strict exclusion from source control; environments (`.env`) solely depend on host injection.

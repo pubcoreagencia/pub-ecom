@@ -22,7 +22,7 @@ Welcome to the PUB ECOM project. Before taking any action, writing code, or runn
 - **RLS = FINAL ENFORCEMENT**: Application authorization atua apenas como pre-check.
 - **SERVICE_ROLE = SERVER ONLY**: O cliente privilegiado (`admin.ts`) nunca deve vazar para a UI ou workflows genéricos.
 - **NO PHASE BLEEDING**: Só implemente o escopo exato exigido na fase atual.
-- **NO INVENTED DATABASE CAPABILITIES**: Não pressuponha cronjobs, triggers, ou listeners que não existam nas migrations de 00001 a 00007.
+- **NO INVENTED DATABASE CAPABILITIES**: Não pressuponha cronjobs, triggers, ou listeners que não existam nas migrations de 00001 a 00015.
 
 Quando houver GAP:
 **STOP. DOCUMENT. DO NOT INVENT.**
