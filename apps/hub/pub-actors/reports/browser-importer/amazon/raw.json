@@ -1,0 +1,21 @@
+{
+  "title": {
+    "value": "Kindle 11ª Geração Tela de 6 Pol 16GB Preto",
+    "source": "dom"
+  },
+  "price": {
+    "value": 499,
+    "source": "dom"
+  },
+  "images": {
+    "value": [
+      "https://m.media-amazon.com/images/I/71xyz.jpg"
+    ],
+    "source": "dom"
+  },
+  "description": {
+    "value": "O Kindle mais leve e compacto, com tela de 300 ppi de alta resolução.",
+    "source": "dom"
+  },
+  "brand": null
+}

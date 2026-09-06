@@ -1,0 +1,33 @@
+{
+  "id": "tiktokshop:default:1729482910485729104",
+  "externalId": "1729482910485729104",
+  "source": "tiktokshop",
+  "sourceUrl": "https://shop.tiktok.com/view/product/1729482910485729104",
+  "storeId": "tiktokshop:default",
+  "shopId": null,
+  "title": "Camiseta Streetwear Oversized 100% Algodão Premium",
+  "description": "Camiseta com caimento perfeito e tecido de alta densidade.",
+  "price": 69.9,
+  "compareAtPrice": null,
+  "currency": "BRL",
+  "images": [
+    "https://p16-va.tiktokcdn.com/obj/tos-maliva-p-0068/sample.jpg"
+  ],
+  "thumbnail": "https://p16-va.tiktokcdn.com/obj/tos-maliva-p-0068/sample.jpg",
+  "variants": [],
+  "sku": "1729482910485729104",
+  "stock": 50,
+  "rating": null,
+  "soldCount": null,
+  "category": "Moda Masculina",
+  "brand": "TikTok Trend",
+  "attributes": {
+    "marketplace": "tiktokshop",
+    "collectedVia": "browser-importer"
+  },
+  "metadata": {
+    "extractionLevel": "browser_importer"
+  },
+  "extractionLevel": "browser_importer",
+  "extractedAt": "2026-08-24T22:31:16.357Z"
+}

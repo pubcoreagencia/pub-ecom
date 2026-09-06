@@ -1,0 +1,24 @@
+{
+  "product": {
+    "title": "Sandália Babuche Zentta Confort Masculino Leve Macio",
+    "body_html": "<p>Super leve e confortável, ideal para o dia a dia.</p>",
+    "vendor": "PUB SHOPEE",
+    "product_type": "Calçados",
+    "tags": "shopee, pub-browser-import",
+    "published": true,
+    "variants": [
+      {
+        "price": "55.86",
+        "sku": "PUB-10123984729",
+        "inventory_management": "shopify",
+        "inventory_quantity": 50
+      }
+    ],
+    "images": [
+      {
+        "src": "https://down-br.img.susercontent.com/file/br-11134207-7r98o-m1a2b3c4.jpg",
+        "position": 1
+      }
+    ]
+  }
+}

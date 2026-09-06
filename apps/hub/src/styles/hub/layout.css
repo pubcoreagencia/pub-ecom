@@ -1,0 +1,21 @@
+/* Hub Layout Base */
+.hub-sidebar {
+  background-color: var(--hub-sidebar-bg);
+  border-right: 1px solid var(--hub-border);
+}
+
+.hub-bg-primary {
+  background-color: var(--hub-primary);
+}
+
+.hub-text-primary {
+  color: var(--hub-primary);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

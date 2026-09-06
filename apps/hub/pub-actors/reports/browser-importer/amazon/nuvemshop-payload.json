@@ -1,0 +1,24 @@
+{
+  "name": {
+    "pt": "Kindle 11ª Geração Tela de 6 Pol 16GB Preto"
+  },
+  "description": {
+    "pt": "O Kindle mais leve e compacto, com tela de 300 ppi de alta resolução."
+  },
+  "brand": "Amazon",
+  "tags": "amazon, pub-browser-import",
+  "published": true,
+  "variants": [
+    {
+      "price": "698.60",
+      "stock": 50,
+      "sku": "NUV-B09SWTG95P",
+      "values": []
+    }
+  ],
+  "images": [
+    {
+      "src": "https://m.media-amazon.com/images/I/71xyz.jpg"
+    }
+  ]
+}

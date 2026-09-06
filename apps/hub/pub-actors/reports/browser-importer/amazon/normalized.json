@@ -1,0 +1,33 @@
+{
+  "id": "amazon:default:B09SWTG95P",
+  "externalId": "B09SWTG95P",
+  "source": "amazon",
+  "sourceUrl": "https://www.amazon.com.br/dp/B09SWTG95P",
+  "storeId": "amazon:default",
+  "shopId": null,
+  "title": "Kindle 11ª Geração Tela de 6 Pol 16GB Preto",
+  "description": "O Kindle mais leve e compacto, com tela de 300 ppi de alta resolução.",
+  "price": 499,
+  "compareAtPrice": null,
+  "currency": "BRL",
+  "images": [
+    "https://m.media-amazon.com/images/I/71xyz.jpg"
+  ],
+  "thumbnail": "https://m.media-amazon.com/images/I/71xyz.jpg",
+  "variants": [],
+  "sku": "B09SWTG95P",
+  "stock": 50,
+  "rating": null,
+  "soldCount": null,
+  "category": "Eletrônicos",
+  "brand": "Amazon",
+  "attributes": {
+    "marketplace": "amazon",
+    "collectedVia": "browser-importer"
+  },
+  "metadata": {
+    "extractionLevel": "browser_importer"
+  },
+  "extractionLevel": "browser_importer",
+  "extractedAt": "2026-08-24T22:31:16.355Z"
+}

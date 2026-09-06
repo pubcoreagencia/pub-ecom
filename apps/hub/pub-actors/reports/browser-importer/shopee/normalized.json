@@ -1,0 +1,33 @@
+{
+  "id": "shopee:1729928484:10123984729",
+  "externalId": "10123984729",
+  "source": "shopee",
+  "sourceUrl": "https://shopee.com.br/Sandalia-Babuche-Zentta-Confort-i.1729928484.10123984729",
+  "storeId": "shopee:1729928484",
+  "shopId": "1729928484",
+  "title": "Sandália Babuche Zentta Confort Masculino Leve Macio",
+  "description": "Super leve e confortável, ideal para o dia a dia.",
+  "price": 39.9,
+  "compareAtPrice": null,
+  "currency": "BRL",
+  "images": [
+    "https://down-br.img.susercontent.com/file/br-11134207-7r98o-m1a2b3c4.jpg"
+  ],
+  "thumbnail": "https://down-br.img.susercontent.com/file/br-11134207-7r98o-m1a2b3c4.jpg",
+  "variants": [],
+  "sku": "10123984729",
+  "stock": 50,
+  "rating": null,
+  "soldCount": null,
+  "category": "Calçados",
+  "brand": "Zentta",
+  "attributes": {
+    "marketplace": "shopee",
+    "collectedVia": "browser-importer"
+  },
+  "metadata": {
+    "extractionLevel": "browser_importer"
+  },
+  "extractionLevel": "browser_importer",
+  "extractedAt": "2026-08-24T22:31:16.352Z"
+}

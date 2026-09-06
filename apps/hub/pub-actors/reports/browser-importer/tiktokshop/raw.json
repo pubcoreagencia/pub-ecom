@@ -1,0 +1,21 @@
+{
+  "title": {
+    "value": "Camiseta Streetwear Oversized 100% Algodão Premium",
+    "source": "dom"
+  },
+  "price": {
+    "value": 69.9,
+    "source": "dom"
+  },
+  "images": {
+    "value": [
+      "https://p16-va.tiktokcdn.com/obj/tos-maliva-p-0068/sample.jpg"
+    ],
+    "source": "dom"
+  },
+  "description": {
+    "value": "Camiseta com caimento perfeito e tecido de alta densidade.",
+    "source": "dom"
+  },
+  "brand": null
+}

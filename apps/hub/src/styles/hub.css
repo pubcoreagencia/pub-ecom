@@ -1,0 +1,60 @@
+/* PUB ECOM — Official Premium Design System (Emerald Dark) */
+
+@import "hub/layout.css";
+@import "hub/components.css";
+@import "hub/animations.css";
+
+:root {
+  /* Official PUB Ops Hub OKLCH Palette */
+  --hub-bg: #000000;
+  --hub-sidebar-bg: #000000;
+  --hub-card: #0a0a0a;
+  --hub-card-hover: #111111;
+  --hub-primary: #ff0000; /* Red Accent */
+  --hub-primary-foreground: #ffffff;
+  --hub-foreground: #ffffff;
+  --hub-muted: #666666;
+  --hub-border: #222222;
+  --hub-accent: rgba(255, 0, 0, 0.1);
+  --hub-success: #22c55e;
+  --hub-error: #ef4444;
+
+  /* Layout Constants */
+  --hub-sidebar-width: 260px;
+  --hub-header-height: 64px;
+}
+
+.pub-ecom-root {
+  background-color: var(--hub-bg);
+  color: var(--hub-foreground);
+  min-height: 100vh;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Base Utility Classes Reused from Hub */
+.hub-glass {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.hub-gradient-border {
+  position: relative;
+  background: var(--hub-card);
+}
+
+.hub-gradient-border::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(
+    to bottom right,
+    var(--hub-border),
+    transparent,
+    var(--hub-primary) / 20
+  );
+  border-radius: inherit;
+  z-index: -1;
+}

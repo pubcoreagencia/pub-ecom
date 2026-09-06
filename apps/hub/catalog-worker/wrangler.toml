@@ -1,0 +1,12 @@
+name = "pub-ecom-catalog-worker"
+main = "dist/index.js"
+compatibility_date = "2026-08-21"
+compatibility_flags = [ "nodejs_compat" ]
+
+[browser]
+binding = "BROWSER"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pub-ecom-master-catalog"
+database_id = "9d565ef9-f1c5-4af0-ac91-52411ac88d45"

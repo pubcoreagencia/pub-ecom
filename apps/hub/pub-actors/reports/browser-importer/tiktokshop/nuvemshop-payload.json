@@ -1,0 +1,24 @@
+{
+  "name": {
+    "pt": "Camiseta Streetwear Oversized 100% Algodão Premium"
+  },
+  "description": {
+    "pt": "Camiseta com caimento perfeito e tecido de alta densidade."
+  },
+  "brand": "TikTok Trend",
+  "tags": "tiktokshop, pub-browser-import",
+  "published": true,
+  "variants": [
+    {
+      "price": "97.86",
+      "stock": 50,
+      "sku": "NUV-1729482910485729104",
+      "values": []
+    }
+  ],
+  "images": [
+    {
+      "src": "https://p16-va.tiktokcdn.com/obj/tos-maliva-p-0068/sample.jpg"
+    }
+  ]
+}

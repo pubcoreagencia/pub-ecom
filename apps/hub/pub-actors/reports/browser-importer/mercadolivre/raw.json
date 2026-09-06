@@ -1,0 +1,24 @@
+{
+  "title": {
+    "value": "Sandália Babuche Masculino Confort Macia Antiderrapante",
+    "source": "dom"
+  },
+  "price": {
+    "value": 49.9,
+    "source": "dom"
+  },
+  "images": {
+    "value": [
+      "https://http2.mlstatic.com/D_682741-MLB2101683935_012022-O.jpg"
+    ],
+    "source": "dom"
+  },
+  "description": {
+    "value": "Babuche anatômico confortável para uso prolongado.",
+    "source": "dom"
+  },
+  "brand": {
+    "value": "Zentta",
+    "source": "jsonld"
+  }
+}

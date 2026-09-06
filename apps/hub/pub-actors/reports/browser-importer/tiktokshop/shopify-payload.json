@@ -1,0 +1,24 @@
+{
+  "product": {
+    "title": "Camiseta Streetwear Oversized 100% Algodão Premium",
+    "body_html": "<p>Camiseta com caimento perfeito e tecido de alta densidade.</p>",
+    "vendor": "PUB TIKTOKSHOP",
+    "product_type": "Moda Masculina",
+    "tags": "tiktokshop, pub-browser-import",
+    "published": true,
+    "variants": [
+      {
+        "price": "97.86",
+        "sku": "PUB-1729482910485729104",
+        "inventory_management": "shopify",
+        "inventory_quantity": 50
+      }
+    ],
+    "images": [
+      {
+        "src": "https://p16-va.tiktokcdn.com/obj/tos-maliva-p-0068/sample.jpg",
+        "position": 1
+      }
+    ]
+  }
+}

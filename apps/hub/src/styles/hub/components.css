@@ -1,0 +1,16 @@
+/* Hub Components */
+.hub-card {
+  background-color: var(--hub-card);
+  border: 1px solid var(--hub-border);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.hub-card:hover {
+  background-color: var(--hub-card-hover);
+  border-color: var(--hub-primary) / 30;
+}
+
+.outline-text-red {
+  -webkit-text-stroke: 1px var(--hub-primary);
+}

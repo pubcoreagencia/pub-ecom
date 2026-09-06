@@ -1,0 +1,75 @@
+{
+  "marketplace": "generic",
+  "url": "about:blank",
+  "externalId": "ITEM_1",
+  "shopId": null,
+  "provenance": {
+    "title": {
+      "value": "Sandália Babuche Confort Zentta Masculina",
+      "source": "dom",
+      "evidence": "Sandália Babuche Confort Zentta Masculina"
+    },
+    "price": {
+      "value": 49.9,
+      "source": "dom",
+      "evidence": 49.9
+    },
+    "images": {
+      "value": [
+        "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800"
+      ],
+      "source": "dom",
+      "count": 1
+    },
+    "description": {
+      "value": "Babuche leve anatômico com perfurações para ventilação e solado antiderrapante.",
+      "source": "jsonld"
+    },
+    "brand": {
+      "value": "Zentta",
+      "source": "jsonld"
+    },
+    "category": {
+      "value": null,
+      "source": "none"
+    },
+    "hydrationFound": false,
+    "jsonldFound": true
+  },
+  "isComplete": true,
+  "canonicalProduct": {
+    "id": "generic:default:ITEM_1",
+    "externalId": "ITEM_1",
+    "source": "generic",
+    "sourceUrl": "about:blank",
+    "storeId": "generic:default",
+    "shopId": null,
+    "title": "Sandália Babuche Confort Zentta Masculina",
+    "description": "Babuche leve anatômico com perfurações para ventilação e solado antiderrapante.",
+    "price": 49.9,
+    "compareAtPrice": null,
+    "currency": "BRL",
+    "images": [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800"
+    ],
+    "thumbnail": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800",
+    "variants": [],
+    "sku": "ITEM_1",
+    "stock": 50,
+    "rating": null,
+    "soldCount": null,
+    "category": null,
+    "brand": "Zentta",
+    "attributes": {
+      "marketplace": "generic",
+      "collectedVia": "chrome_cdp_live"
+    },
+    "metadata": {
+      "extractionLevel": "browser_collector_cdp"
+    },
+    "extractionLevel": "browser_collector",
+    "extractedAt": "2026-08-24T21:00:35.813Z"
+  },
+  "durationMs": 9,
+  "screenshotPath": "C:\\Users\\Matheus Paes\\pubecomhub\\reports\\browser-collector\\generic\\screenshot.png"
+}

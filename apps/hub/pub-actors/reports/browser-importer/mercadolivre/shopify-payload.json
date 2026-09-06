@@ -1,0 +1,24 @@
+{
+  "product": {
+    "title": "Sandália Babuche Masculino Confort Macia Antiderrapante",
+    "body_html": "<p>Babuche anatômico confortável para uso prolongado.</p>",
+    "vendor": "PUB MERCADOLIVRE",
+    "product_type": "Calçados",
+    "tags": "mercadolivre, pub-browser-import",
+    "published": true,
+    "variants": [
+      {
+        "price": "69.86",
+        "sku": "PUB-MLB2101683935",
+        "inventory_management": "shopify",
+        "inventory_quantity": 50
+      }
+    ],
+    "images": [
+      {
+        "src": "https://http2.mlstatic.com/D_682741-MLB2101683935_012022-O.jpg",
+        "position": 1
+      }
+    ]
+  }
+}
