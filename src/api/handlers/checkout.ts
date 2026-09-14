@@ -47,6 +47,52 @@ export async function handleCheckoutRequest(req: Request, ctx: AppContext): Prom
       });
     }
 
+    if (req.method === 'POST' && path.match(/^\/api\/checkout\/([^\/]+)\/complete$/)) {
+      const match = path.match(/^\/api\/checkout\/([^\/]+)\/complete$/);
+      const checkoutId = match![1];
+
+      let body: any;
+      try {
+        body = await req.json();
+      } catch (e) {
+        return new Response(JSON.stringify({ error: 'Malformed JSON' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      if (!body || !body.shipping_quote_id || typeof body.shipping_quote_id !== 'string') {
+        return new Response(JSON.stringify({ error: 'Missing or invalid shipping_quote_id' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      if (!body.shipping_address || typeof body.shipping_address !== 'object') {
+        return new Response(JSON.stringify({ error: 'Missing or invalid shipping_address' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      // If user is not authenticated, customer_info (email, full_name, document) is required
+      const customerInfo = body.customer_info;
+
+      // Note: complete_checkout RPC is executed via adminDb (service_role) as designed
+      const privilegedCheckoutService = new CheckoutService(ctx.adminDb, reqCtx, authCtx, tenantCtx);
+      const data = await privilegedCheckoutService.completeCheckout(
+        checkoutId,
+        body.shipping_quote_id,
+        body.shipping_address,
+        customerInfo
+      );
+
+      return new Response(JSON.stringify({ data }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
       headers: { 'Content-Type': 'application/json' }

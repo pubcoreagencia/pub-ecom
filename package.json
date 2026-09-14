@@ -6,7 +6,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "npx tsx tests/foundation.test.ts && npx tsx tests/identity.test.ts && npx tsx tests/tenant.test.ts && npx tsx tests/catalog.test.ts && npx tsx tests/media.test.ts && npx tsx tests/commerce.test.ts && npx tsx tests/routing.test.ts && npx tsx tests/checkout.test.ts && npx tsx tests/api_checkout.test.ts",
+    "test": "npx tsx tests/foundation.test.ts && npx tsx tests/identity.test.ts && npx tsx tests/tenant.test.ts && npx tsx tests/catalog.test.ts && npx tsx tests/media.test.ts && npx tsx tests/commerce.test.ts && npx tsx tests/routing.test.ts && npx tsx tests/checkout.test.ts && npx tsx tests/api_checkout.test.ts && npx tsx tests/order_execution.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],

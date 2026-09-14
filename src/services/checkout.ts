@@ -61,6 +61,48 @@ export class CheckoutService extends BaseService {
     return { checkoutId: data };
   }
 
+  async completeCheckout(
+    checkoutId: string,
+    shippingQuoteId: string,
+    shippingAddress: any,
+    customerInfo?: { email: string; full_name: string; document: string }
+  ): Promise<{ orderId: string }> {
+    if (!this.tenant.isResolved || !this.tenant.storeId) {
+      throw new AppError({
+        code: 'TENANT_ACCESS_ERROR',
+        publicMessage: 'Invalid store context.',
+        internalMessage: 'Checkout requires a resolved store context.',
+        httpStatus: 403,
+        retryable: false,
+        requestId: this.context.requestId
+      });
+    }
+
+    const { data, error } = await this.db.rpc('complete_checkout', {
+      p_checkout_id: checkoutId,
+      p_shipping_quote_id: shippingQuoteId,
+      p_shipping_address: shippingAddress,
+      p_customer_info: (customerInfo || null) as any
+    });
+
+    if (error) {
+      throw this.mapCheckoutError(error);
+    }
+
+    if (!data) {
+      throw new AppError({
+        code: 'INTERNAL_ERROR',
+        publicMessage: 'Failed to complete checkout.',
+        internalMessage: 'complete_checkout returned null orderId',
+        httpStatus: 500,
+        retryable: true,
+        requestId: this.context.requestId
+      });
+    }
+
+    return { orderId: data };
+  }
+
   private mapCheckoutError(error: any): AppError {
     const msg = error.message || '';
 
@@ -93,6 +135,30 @@ export class CheckoutService extends BaseService {
     }
     if (msg.includes('insufficient_stock')) {
       return new AppError({ code: 'CONFLICT', publicMessage: 'Insufficient stock for one or more items in your cart.', internalMessage: msg, httpStatus: 409, retryable: false, requestId: this.context.requestId, cause: error });
+    }
+    if (msg.includes('checkout_expired')) {
+      return new AppError({ code: 'CONFLICT', publicMessage: 'Checkout has expired.', internalMessage: msg, httpStatus: 409, retryable: false, requestId: this.context.requestId, cause: error });
+    }
+    if (msg.includes('checkout_not_in_progress')) {
+      return new AppError({ code: 'CONFLICT', publicMessage: 'Checkout is not in progress.', internalMessage: msg, httpStatus: 409, retryable: false, requestId: this.context.requestId, cause: error });
+    }
+    if (msg.includes('missing_customer_info') || msg.includes('missing_guest_')) {
+      return new AppError({ code: 'VALIDATION_ERROR', publicMessage: 'Customer contact information is incomplete.', internalMessage: msg, httpStatus: 400, retryable: false, requestId: this.context.requestId, cause: error });
+    }
+    if (msg.includes('missing_shipping_quote') || msg.includes('invalid_shipping_quote')) {
+      return new AppError({ code: 'VALIDATION_ERROR', publicMessage: 'Invalid or missing shipping quote.', internalMessage: msg, httpStatus: 400, retryable: false, requestId: this.context.requestId, cause: error });
+    }
+    if (msg.includes('missing_shipping_address') || msg.includes('invalid_shipping_address')) {
+      return new AppError({ code: 'VALIDATION_ERROR', publicMessage: 'Invalid or missing shipping address.', internalMessage: msg, httpStatus: 400, retryable: false, requestId: this.context.requestId, cause: error });
+    }
+    if (msg.includes('reservation_mismatch')) {
+      return new AppError({ code: 'CONFLICT', publicMessage: 'Inventory reservation mismatch.', internalMessage: msg, httpStatus: 409, retryable: false, requestId: this.context.requestId, cause: error });
+    }
+    if (msg.includes('MERCHANT_MARGIN_NEGATIVE')) {
+      return new AppError({ code: 'VALIDATION_ERROR', publicMessage: 'Order contains items with negative merchant margin.', internalMessage: msg, httpStatus: 422, retryable: false, requestId: this.context.requestId, cause: error });
+    }
+    if (msg.includes('invariant_violation')) {
+      return new AppError({ code: 'INTERNAL_ERROR', publicMessage: 'System state invariant violation.', internalMessage: msg, httpStatus: 500, retryable: false, requestId: this.context.requestId, cause: error });
     }
 
     // Default unhandled error

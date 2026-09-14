@@ -194,6 +194,15 @@ async function runApiTests() {
     // DB throws 'empty_cart' -> 400
     assert.strictEqual(emptyGuestReq.status, 400);
 
+    // 6. Complete Checkout Endpoint (Validation Errors)
+    console.log('[TEST] POST /api/checkout/:id/complete (missing payload)');
+    const badCompleteReq = await rawFetch(`/api/checkout/${guestCartId}/complete`, {
+      method: 'POST',
+      headers: { Host: testDomain, 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    assert.strictEqual(badCompleteReq.status, 400);
+
     console.log('[PASS] API Checkout tests');
   } finally {
     stop();

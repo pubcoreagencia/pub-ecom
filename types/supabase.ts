@@ -990,7 +990,7 @@ export type Database = {
           {
             foreignKeyName: "orders_checkout_id_fkey"
             columns: ["checkout_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "checkouts"
             referencedColumns: ["id"]
           },
@@ -1724,6 +1724,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_checkout: {
+        Args: {
+          p_checkout_id: string
+          p_customer_info?: Json
+          p_shipping_address: Json
+          p_shipping_quote_id: string
+        }
+        Returns: string
+      }
       create_checkout: {
         Args: {
           p_cart_id: string
