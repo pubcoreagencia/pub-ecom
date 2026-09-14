@@ -13,8 +13,18 @@ export class CredentialCipher {
       this.keyConfig = keyConfig;
     } else {
       const rawEnv = process.env.GATEWAY_ENCRYPTION_KEYS;
+      const isProduction =
+        process.env.APP_ENVIRONMENT === 'PRODUCTION' ||
+        process.env.NODE_ENV === 'production';
+
       if (!rawEnv) {
-        // Fallback default for local test environments (deterministic 32-byte key)
+        if (isProduction) {
+          throw new Error(
+            'GATEWAY_ENCRYPTION_KEYS is required in production: missing encryption keys environment variable'
+          );
+        }
+
+        // Fallback default strictly for local test/development environments (deterministic 32-byte key)
         this.keyConfig = {
           current: 'v1',
           keys: {

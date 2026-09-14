@@ -522,6 +522,81 @@ async function run() {
   const decryptedOld = multiKeyCipher.decrypt(ciphertextV1);
   assert.strictEqual(decryptedOld.legacyKey, 'OLD_KEY_V1');
 
+  // [TEST 16]
+  console.log('[TEST 16] Security Gate G4: Production fail-fast on missing or malformed GATEWAY_ENCRYPTION_KEYS');
+  const prevAppEnv = process.env.APP_ENVIRONMENT;
+  const prevNodeEnv = process.env.NODE_ENV;
+  const prevKeys = process.env.GATEWAY_ENCRYPTION_KEYS;
+
+  try {
+    // 16.1: Production + missing keys -> Fail fast
+    process.env.APP_ENVIRONMENT = 'PRODUCTION';
+    delete process.env.NODE_ENV;
+    delete process.env.GATEWAY_ENCRYPTION_KEYS;
+    assert.throws(
+      () => new CredentialCipher(),
+      (err: any) => err.message.includes('GATEWAY_ENCRYPTION_KEYS is required in production'),
+      'Should fail fast when GATEWAY_ENCRYPTION_KEYS is missing in APP_ENVIRONMENT=PRODUCTION'
+    );
+
+    // 16.2: NODE_ENV=production + missing keys -> Fail fast
+    delete process.env.APP_ENVIRONMENT;
+    process.env.NODE_ENV = 'production';
+    assert.throws(
+      () => new CredentialCipher(),
+      (err: any) => err.message.includes('GATEWAY_ENCRYPTION_KEYS is required in production'),
+      'Should fail fast when GATEWAY_ENCRYPTION_KEYS is missing in NODE_ENV=production'
+    );
+
+    // 16.3: Production + valid keys -> PASS
+    process.env.APP_ENVIRONMENT = 'PRODUCTION';
+    process.env.GATEWAY_ENCRYPTION_KEYS = JSON.stringify({
+      current: 'prod_v1',
+      keys: {
+        prod_v1: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+      }
+    });
+    const prodCipher = new CredentialCipher();
+    const prodCiphertext = prodCipher.encrypt({ secret: 'prod_val' });
+    assert.strictEqual(prodCipher.decrypt(prodCiphertext).secret, 'prod_val');
+
+    // 16.4: Test/Dev environment + missing keys -> Fallback fixture PASS
+    process.env.APP_ENVIRONMENT = 'SANDBOX';
+    delete process.env.NODE_ENV;
+    delete process.env.GATEWAY_ENCRYPTION_KEYS;
+    const testCipher = new CredentialCipher();
+    const testCiphertext = testCipher.encrypt({ secret: 'test_val' });
+    assert.strictEqual(testCipher.decrypt(testCiphertext).secret, 'test_val');
+
+    // 16.5: Malformed JSON keys -> Fail
+    process.env.GATEWAY_ENCRYPTION_KEYS = '{ invalid_json }';
+    assert.throws(
+      () => new CredentialCipher(),
+      (err: any) => err.message.includes('Invalid GATEWAY_ENCRYPTION_KEYS JSON'),
+      'Should fail when GATEWAY_ENCRYPTION_KEYS is invalid JSON'
+    );
+
+    // 16.6: Malformed KeyConfig structure (missing current or invalid length) -> Fail
+    process.env.GATEWAY_ENCRYPTION_KEYS = JSON.stringify({
+      current: 'bad_key',
+      keys: { bad_key: 'too_short' }
+    });
+    assert.throws(
+      () => new CredentialCipher(),
+      (err: any) => err.message.includes('must be 32 bytes hex encoded'),
+      'Should fail when key is not 32 bytes hex encoded'
+    );
+  } finally {
+    if (prevAppEnv !== undefined) process.env.APP_ENVIRONMENT = prevAppEnv;
+    else delete process.env.APP_ENVIRONMENT;
+
+    if (prevNodeEnv !== undefined) process.env.NODE_ENV = prevNodeEnv;
+    else delete process.env.NODE_ENV;
+
+    if (prevKeys !== undefined) process.env.GATEWAY_ENCRYPTION_KEYS = prevKeys;
+    else delete process.env.GATEWAY_ENCRYPTION_KEYS;
+  }
+
   console.log('== ALL 00017 PAYMENT HUB FOUNDATION TESTS PASSED SUCCESSFULLY ==');
 }
 
