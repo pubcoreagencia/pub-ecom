@@ -7,12 +7,16 @@ import { PaymentProvider, NormalizedPaymentInput } from './types';
 
 export const PROVIDER_REGISTRY: Record<string, PaymentProvider> = {};
 
+import { ExternalCustomerResolver } from './external_identity_resolver';
+
 export class PaymentHubService {
   private cipher = new CredentialCipher();
   private resolver: ConnectionResolver;
+  private externalResolver: ExternalCustomerResolver;
 
   constructor(private db: SupabaseClient<Database>) {
     this.resolver = new ConnectionResolver(db);
+    this.externalResolver = new ExternalCustomerResolver(db);
   }
 
   /**
@@ -240,34 +244,53 @@ export class PaymentHubService {
     // 6. Fetch real customer if available
     let customerName = 'Guest Customer';
     let customerEmail = 'guest@checkout.local';
+    let customerDocument: string | undefined = undefined;
     if (order.customer_id) {
-      const { data: customer } = await this.db
+      const { data: cust } = await this.db
         .from('customers')
-        .select('full_name, email')
+        .select('full_name, email, document')
         .eq('id', order.customer_id)
         .maybeSingle();
-      if (customer) {
-        customerName = customer.full_name || customerName;
-        customerEmail = customer.email || customerEmail;
+      if (cust) {
+        customerName = cust.full_name || customerName;
+        customerEmail = cust.email || customerEmail;
+        customerDocument = (cust as any).document;
       }
     }
 
-    // 7. Decrypt credentials and call adapter
-    const decryptedCreds = this.cipher.decrypt(connection.encrypted_credentials);
-    const input: NormalizedPaymentInput = {
-      orderId: order.id,
-      orderNumber: order.order_number,
-      amount: Number(order.total_amount),
-      currency: 'BRL',
-      customer: {
-        name: customerName,
-        email: customerEmail
-      },
-      method: params.method,
-      cardToken: params.cardToken,
-      installments: params.installments,
-      idempotencyKey: params.idempotencyKey
-    };
+    // 7. Resolve external customer identity if provider supports it
+let externalCustomerId: string | undefined;
+if (adapter.capabilities?.createExternalCustomer) {
+  const { externalCustomerId: ecId } = await this.externalResolver.getOrCreateExternalCustomer({
+    customerId: order.customer_id,
+    connection,
+    provider: adapter,
+    normalizedCustomer: {
+      name: customerName,
+      email: customerEmail,
+      document: customerDocument,
+    },
+  });
+  externalCustomerId = ecId;
+}
+
+// 8. Decrypt credentials and call adapter
+const decryptedCreds = this.cipher.decrypt(connection.encrypted_credentials);
+const input: NormalizedPaymentInput = {
+  orderId: order.id,
+  orderNumber: order.order_number,
+  amount: Number(order.total_amount),
+  currency: 'BRL',
+  customer: {
+    name: customerName,
+    email: customerEmail,
+  },
+  method: params.method,
+  cardToken: params.cardToken,
+  installments: params.installments,
+  idempotencyKey: params.idempotencyKey,
+  ...(externalCustomerId ? { externalCustomerId } : {}),
+};
 
     const result = await adapter.createPayment(input, decryptedCreds);
 
