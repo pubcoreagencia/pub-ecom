@@ -378,6 +378,150 @@ export type Database = {
           },
         ]
       }
+      gateway_connections: {
+        Row: {
+          created_at: string | null
+          encrypted_credentials: string
+          environment: string
+          id: string
+          is_global_default: boolean
+          metadata: Json | null
+          organization_id: string | null
+          provider_id: string
+          public_key: string | null
+          status: string
+          store_id: string | null
+          updated_at: string | null
+          webhook_secret_encrypted: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          encrypted_credentials: string
+          environment: string
+          id?: string
+          is_global_default?: boolean
+          metadata?: Json | null
+          organization_id?: string | null
+          provider_id: string
+          public_key?: string | null
+          status?: string
+          store_id?: string | null
+          updated_at?: string | null
+          webhook_secret_encrypted?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          encrypted_credentials?: string
+          environment?: string
+          id?: string
+          is_global_default?: boolean
+          metadata?: Json | null
+          organization_id?: string | null
+          provider_id?: string
+          public_key?: string | null
+          status?: string
+          store_id?: string | null
+          updated_at?: string | null
+          webhook_secret_encrypted?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gateway_connections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gateway_connections_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "gateway_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gateway_connections_store_id_organization_id_fkey"
+            columns: ["store_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      gateway_providers: {
+        Row: {
+          capabilities: Json
+          created_at: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          updated_at: string | null
+        }
+        Insert: {
+          capabilities?: Json
+          created_at?: string | null
+          display_name: string
+          id: string
+          is_active?: boolean
+          updated_at?: string | null
+        }
+        Update: {
+          capabilities?: Json
+          created_at?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      gateway_webhook_events: {
+        Row: {
+          event_dedup_key: string
+          event_type: string
+          gateway_connection_id: string
+          id: string
+          processed_at: string | null
+          processing_error: string | null
+          processing_status: string
+          provider_resource_id: string
+          raw_payload: Json
+          received_at: string | null
+        }
+        Insert: {
+          event_dedup_key: string
+          event_type: string
+          gateway_connection_id: string
+          id?: string
+          processed_at?: string | null
+          processing_error?: string | null
+          processing_status?: string
+          provider_resource_id: string
+          raw_payload: Json
+          received_at?: string | null
+        }
+        Update: {
+          event_dedup_key?: string
+          event_type?: string
+          gateway_connection_id?: string
+          id?: string
+          processed_at?: string | null
+          processing_error?: string | null
+          processing_status?: string
+          provider_resource_id?: string
+          raw_payload?: Json
+          received_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gateway_webhook_events_gateway_connection_id_fkey"
+            columns: ["gateway_connection_id"]
+            isOneToOne: false
+            referencedRelation: "gateway_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_movements: {
         Row: {
           created_at: string | null
@@ -1041,10 +1185,13 @@ export type Database = {
         Row: {
           amount: number
           created_at: string | null
+          error_message: string | null
+          gateway_connection_id: string
           id: string
           idempotency_key: string
           payment_id: string
           provider: string
+          raw_response: Json | null
           status: string
           transaction_id_external: string | null
           type: string
@@ -1052,10 +1199,13 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string | null
+          error_message?: string | null
+          gateway_connection_id: string
           id?: string
           idempotency_key: string
           payment_id: string
           provider: string
+          raw_response?: Json | null
           status: string
           transaction_id_external?: string | null
           type: string
@@ -1063,15 +1213,25 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string | null
+          error_message?: string | null
+          gateway_connection_id?: string
           id?: string
           idempotency_key?: string
           payment_id?: string
           provider?: string
+          raw_response?: Json | null
           status?: string
           transaction_id_external?: string | null
           type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "payment_transactions_gateway_connection_id_fkey"
+            columns: ["gateway_connection_id"]
+            isOneToOne: false
+            referencedRelation: "gateway_connections"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payment_transactions_payment_id_fkey"
             columns: ["payment_id"]
@@ -1090,7 +1250,11 @@ export type Database = {
           id: string
           net_amount: number | null
           order_id: string
+          payment_method: string
+          payment_method_details: Json | null
           provider: string
+          settled_gateway_connection_id: string | null
+          settled_transaction_id: string | null
           status: Database["public"]["Enums"]["payment_status"] | null
           updated_at: string | null
         }
@@ -1102,7 +1266,11 @@ export type Database = {
           id?: string
           net_amount?: number | null
           order_id: string
+          payment_method?: string
+          payment_method_details?: Json | null
           provider: string
+          settled_gateway_connection_id?: string | null
+          settled_transaction_id?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
           updated_at?: string | null
         }
@@ -1114,16 +1282,38 @@ export type Database = {
           id?: string
           net_amount?: number | null
           order_id?: string
+          payment_method?: string
+          payment_method_details?: Json | null
           provider?: string
+          settled_gateway_connection_id?: string | null
+          settled_transaction_id?: string | null
           status?: Database["public"]["Enums"]["payment_status"] | null
           updated_at?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "fk_payments_settled_winner_triplet"
+            columns: [
+              "settled_transaction_id",
+              "id",
+              "settled_gateway_connection_id",
+            ]
+            isOneToOne: false
+            referencedRelation: "payment_transactions"
+            referencedColumns: ["id", "payment_id", "gateway_connection_id"]
+          },
+          {
             foreignKeyName: "payments_order_id_fkey"
             columns: ["order_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_settled_gateway_connection_id_fkey"
+            columns: ["settled_gateway_connection_id"]
+            isOneToOne: false
+            referencedRelation: "gateway_connections"
             referencedColumns: ["id"]
           },
         ]
@@ -1776,6 +1966,20 @@ export type Database = {
           p_master_variant_id: string
           p_quantity: number
           p_ttl_minutes?: number
+        }
+        Returns: boolean
+      }
+      settle_payment_transaction: {
+        Args: {
+          p_connection_id: string
+          p_gateway_fee: number
+          p_net_amount: number
+          p_payment_id: string
+          p_transaction_id: string
+          p_transaction_id_external: string
+          p_verified_amount: number
+          p_verified_currency: string
+          p_verified_outcome: string
         }
         Returns: boolean
       }
