@@ -10,8 +10,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "paths": {
-      "@/*": ["./src/*"]
+    "paths": {"@/*": ["./src/*"]}
     }
   },
   "include": ["src/**/*", "tests/**/*", "types/**/*"],

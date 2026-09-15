@@ -4,6 +4,7 @@ import { AppError } from '../../lib/errors/model';
 import { CredentialCipher } from '../../lib/crypto/credentials';
 import { ConnectionResolver } from './resolver';
 import { PaymentProvider, NormalizedPaymentInput } from './types';
+import { AsaasProvider } from './providers/asaas_provider';
 
 export const PROVIDER_REGISTRY: Record<string, PaymentProvider> = {};
 
@@ -77,6 +78,16 @@ export class PaymentHubService {
       environment: params.environment
     });
 
+    // Ensure provider instance is registered
+    if (!PROVIDER_REGISTRY[providerId]) {
+      throw new AppError({
+        code: 'PAYMENT_PROVIDER_NOT_IMPLEMENTED',
+        publicMessage: 'Selected payment provider is not implemented.',
+        internalMessage: `PAYMENT_PROVIDER_NOT_IMPLEMENTED: Provider adapter ${providerId} not found in registry`,
+        httpStatus: 500,
+        retryable: false
+      });
+    }
     const adapter = PROVIDER_REGISTRY[providerId];
     if (!adapter) {
       throw new AppError({
