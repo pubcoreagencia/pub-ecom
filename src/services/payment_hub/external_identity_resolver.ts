@@ -2,7 +2,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '../../../types/supabase';
 import { AppError } from '../../lib/errors/model';
-import { PaymentProvider, ExternalCustomerCapability } from './types';
+import { PaymentProvider, ExternalCustomerCapability, GatewayCredentials } from './types';
 import { logger } from '../../lib/logging/logger';
 
 /**
@@ -18,15 +18,16 @@ export class ExternalCustomerResolver {
 
   /**
    * Main entry point. Returns the external customer ID and optional metadata.
-   * The caller must provide decrypted credentials via the provider capability.
+   * The caller must provide decrypted credentials via the credentials param.
    */
   async getOrCreateExternalCustomer(params: {
     customerId: string;
     connection: any; // raw connection row from resolver
     provider: PaymentProvider & { capabilities?: ExternalCustomerCapability };
     normalizedCustomer: { name: string; email: string; document?: string };
+    credentials?: GatewayCredentials;
   }): Promise<{ externalCustomerId: string; metadata?: Record<string, unknown> }> {
-    const { customerId, connection, provider, normalizedCustomer } = params;
+    const { customerId, connection, provider, normalizedCustomer, credentials = {} } = params;
 
     // 1️⃣ Attempt to create a PENDING reservation atomically.
     const { data: reservation, error: insertErr } = await this.dbAny
@@ -40,6 +41,7 @@ export class ExternalCustomerResolver {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
+      .select()
       .maybeSingle();
 
     // If we successfully inserted, we are the OWNER.
@@ -90,7 +92,7 @@ export class ExternalCustomerResolver {
       return await fetchIdentity();
     };
 
-    if (identity && identity.status === 'PENDING') {
+    if (!isOwner && identity && identity.status === 'PENDING') {
       // Follow‑up request – poll until the owner resolves the reservation.
       const finalState = await waitForResolution();
       if (finalState && finalState.status === 'ACTIVE' && finalState.external_customer_id) {
@@ -107,7 +109,7 @@ export class ExternalCustomerResolver {
     }
 
     // FAILED or missing row – we may attempt to become the owner.
-    if (identity && identity.status === 'FAILED') {
+    if (!isOwner && identity && identity.status === 'FAILED') {
       // Try to claim the reservation by resetting it to PENDING.
       const { data: claimed, error: claimErr } = await this.dbAny
         .from('customer_gateway_identities')
@@ -120,6 +122,7 @@ export class ExternalCustomerResolver {
         .eq('customer_id', customerId)
         .eq('connection_id', connection.id)
         .eq('status', 'FAILED')
+        .select()
         .maybeSingle();
       if (!claimErr && claimed) {
         // We successfully claimed the reservation.
@@ -150,7 +153,7 @@ export class ExternalCustomerResolver {
           customerId,
           connectionId: connection.id,
           normalizedCustomer
-        });
+        }, credentials);
         if (reconciledId) {
           await this.dbAny
             .from('customer_gateway_identities')
@@ -184,10 +187,11 @@ export class ExternalCustomerResolver {
     let created;
     try {
       created = await createFn({
+        customerId,
         connectionId: connection.id,
         normalizedCustomer,
         idempotencyKey: `${customerId}-${connection.id}`
-      });
+      }, credentials);
     } catch (e: any) {
       // Mark reservation as FAILED.
       await this.dbAny

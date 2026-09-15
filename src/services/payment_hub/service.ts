@@ -8,6 +8,10 @@ import { AsaasProvider } from './providers/asaas_provider';
 
 export const PROVIDER_REGISTRY: Record<string, PaymentProvider> = {};
 
+const BUILTIN_PROVIDERS: Record<string, () => PaymentProvider> = {
+  asaas: () => new AsaasProvider()
+};
+
 import { ExternalCustomerResolver } from './external_identity_resolver';
 
 export class PaymentHubService {
@@ -18,6 +22,23 @@ export class PaymentHubService {
   constructor(private db: SupabaseClient<Database>) {
     this.resolver = new ConnectionResolver(db);
     this.externalResolver = new ExternalCustomerResolver(db);
+  }
+
+  private resolveAdapter(providerId: string): PaymentProvider {
+    if (PROVIDER_REGISTRY[providerId]) {
+      return PROVIDER_REGISTRY[providerId];
+    }
+    const factory = BUILTIN_PROVIDERS[providerId];
+    if (factory) {
+      return factory();
+    }
+    throw new AppError({
+      code: 'INTERNAL_ERROR',
+      publicMessage: 'Selected payment provider is not implemented.',
+      internalMessage: `PAYMENT_PROVIDER_NOT_IMPLEMENTED: Provider adapter ${providerId} not found in registry`,
+      httpStatus: 500,
+      retryable: false
+    });
   }
 
   /**
@@ -78,26 +99,8 @@ export class PaymentHubService {
       environment: params.environment
     });
 
-    // Ensure provider instance is registered
-    if (!PROVIDER_REGISTRY[providerId]) {
-      throw new AppError({
-        code: 'PAYMENT_PROVIDER_NOT_IMPLEMENTED',
-        publicMessage: 'Selected payment provider is not implemented.',
-        internalMessage: `PAYMENT_PROVIDER_NOT_IMPLEMENTED: Provider adapter ${providerId} not found in registry`,
-        httpStatus: 500,
-        retryable: false
-      });
-    }
-    const adapter = PROVIDER_REGISTRY[providerId];
-    if (!adapter) {
-      throw new AppError({
-        code: 'INTERNAL_ERROR',
-        publicMessage: 'Selected provider has no active adapter.',
-        internalMessage: `PAYMENT_PROVIDER_NOT_IMPLEMENTED: Provider adapter ${providerId} not found in registry`,
-        httpStatus: 500,
-        retryable: false
-      });
-    }
+    // Ensure provider adapter is available (registry or built-in factory)
+    const adapter = this.resolveAdapter(providerId);
 
     // 3. Upsert / Fetch payment aggregate (concurrency-safe acquisition)
     let { data: payment } = await this.db
@@ -269,41 +272,47 @@ export class PaymentHubService {
       }
     }
 
-    // 7. Resolve external customer identity if provider supports it
-let externalCustomerId: string | undefined;
-if (adapter.capabilities?.createExternalCustomer) {
-  const { externalCustomerId: ecId } = await this.externalResolver.getOrCreateExternalCustomer({
-    customerId: order.customer_id,
-    connection,
-    provider: adapter,
-    normalizedCustomer: {
-      name: customerName,
-      email: customerEmail,
-      document: customerDocument,
-    },
-  });
-  externalCustomerId = ecId;
-}
+    // 7. Decrypt credentials
+    const decryptedCreds = this.cipher.decrypt(connection.encrypted_credentials);
+    const credsWithEnv = {
+      ...(decryptedCreds as Record<string, unknown>),
+      environment: connection.environment
+    };
 
-// 8. Decrypt credentials and call adapter
-const decryptedCreds = this.cipher.decrypt(connection.encrypted_credentials);
-const input: NormalizedPaymentInput = {
-  orderId: order.id,
-  orderNumber: order.order_number,
-  amount: Number(order.total_amount),
-  currency: 'BRL',
-  customer: {
-    name: customerName,
-    email: customerEmail,
-  },
-  method: params.method,
-  cardToken: params.cardToken,
-  installments: params.installments,
-  idempotencyKey: params.idempotencyKey,
-  ...(externalCustomerId ? { externalCustomerId } : {}),
-};
+    // 8. Resolve external customer identity if provider supports it
+    let externalCustomerId: string | undefined;
+    if (adapter.capabilities?.createExternalCustomer) {
+      const { externalCustomerId: ecId } = await this.externalResolver.getOrCreateExternalCustomer({
+        customerId: order.customer_id,
+        connection,
+        provider: adapter,
+        normalizedCustomer: {
+          name: customerName,
+          email: customerEmail,
+          document: customerDocument,
+        },
+        credentials: credsWithEnv,
+      });
+      externalCustomerId = ecId;
+    }
 
-    const result = await adapter.createPayment(input, decryptedCreds);
+    const input: NormalizedPaymentInput = {
+      orderId: order.id,
+      orderNumber: order.order_number,
+      amount: Number(order.total_amount),
+      currency: 'BRL',
+      customer: {
+        name: customerName,
+        email: customerEmail,
+      },
+      method: params.method,
+      cardToken: params.cardToken,
+      installments: params.installments,
+      idempotencyKey: params.idempotencyKey,
+      ...(externalCustomerId ? { externalCustomerId } : {}),
+    };
+
+    const result = await adapter.createPayment(input, credsWithEnv);
 
     // 7. If instant success (e.g. approved credit card), settle immediately via RPC
     if (result.status === 'PAID') {
@@ -394,16 +403,7 @@ const input: NormalizedPaymentInput = {
       });
     }
 
-    const adapter = PROVIDER_REGISTRY[params.providerId];
-    if (!adapter) {
-      throw new AppError({
-        code: 'INTERNAL_ERROR',
-        publicMessage: 'Provider not implemented',
-        internalMessage: `PAYMENT_PROVIDER_NOT_IMPLEMENTED: Adapter ${params.providerId} missing`,
-        httpStatus: 500,
-        retryable: false
-      });
-    }
+    const adapter = this.resolveAdapter(params.providerId);
 
     // 2. Decrypt webhook secret and verify signature
     let webhookSecret = '';
@@ -463,7 +463,11 @@ const input: NormalizedPaymentInput = {
 
     // 5. Active Re-Fetch and Settle
     const creds = this.cipher.decrypt(connection.encrypted_credentials);
-    const paymentStatus = await adapter.getPayment(verification.resourceId, creds);
+    const credsWithEnv = {
+      ...(creds as Record<string, unknown>),
+      environment: connection.environment
+    };
+    const paymentStatus = await adapter.getPayment(verification.resourceId, credsWithEnv);
 
     // Locate transaction by external id
     const { data: tx } = await this.db

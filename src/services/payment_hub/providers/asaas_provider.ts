@@ -1,43 +1,64 @@
-import { PaymentProvider, NormalizedPaymentInput, NormalizedPaymentResult, NormalizedPaymentStatus, WebhookVerificationResult, ExternalCustomerCapability } from '../types';
+import {
+  PaymentProvider,
+  NormalizedPaymentInput,
+  NormalizedPaymentResult,
+  NormalizedPaymentStatus,
+  WebhookVerificationResult,
+  ExternalCustomerCapability,
+  GatewayCredentials
+} from '../types';
 import { AsaasCredentials } from './asaas/types';
-import { CredentialCipher } from '../../../lib/crypto/credentials';
 
 /**
- * Asaas PIX Sandbox Provider
+ * Deterministic helper to format customer external reference for Asaas.
+ */
+export function getExternalReference(customerId: string): string {
+  return `pub_customer:${customerId}`;
+}
+
+/**
+ * Asaas PIX Sandbox / Production Provider.
+ * Stateless with respect to credentials (credentials are passed per-call).
  */
 export class AsaasProvider implements PaymentProvider {
   readonly providerId = 'asaas';
-  /** Connection row from gateway_connections, used for environment and webhook secret */
-  private connection: any;
-  private creds: AsaasCredentials;
   capabilities: ExternalCustomerCapability;
 
-  constructor(connection: any) {
-    this.connection = connection;
-    const cipher = new CredentialCipher();
-    this.creds = cipher.decrypt(connection.encrypted_credentials) as AsaasCredentials;
+  constructor(private options?: { environment?: 'SANDBOX' | 'PRODUCTION' }) {
     this.capabilities = {
       reconcileExternalCustomer: this.reconcileExternalCustomer.bind(this),
       createExternalCustomer: this.createExternalCustomer.bind(this)
     };
   }
 
-  private baseUrl(env: string): string {
-    return env === 'SANDBOX' ? 'https://api-sandbox.asaas.com/v3' : 'https://api-asaas.com/v3';
+  private getBaseUrl(creds?: GatewayCredentials): string {
+    const env = (creds?.environment as string) || this.options?.environment || process.env.APP_ENVIRONMENT || 'SANDBOX';
+    return env === 'PRODUCTION' ? 'https://api-asaas.com/v3' : 'https://api-sandbox.asaas.com/v3';
   }
 
-  private authHeaders(): Record<string, string> {
-    return { 'access-token': this.creds.apiKey, 'Content-Type': 'application/json' };
+  private validateCredentials(creds: GatewayCredentials): AsaasCredentials {
+    if (!creds || typeof creds !== 'object' || typeof (creds as any).apiKey !== 'string' || !(creds as any).apiKey.trim()) {
+      throw new Error('Invalid Asaas credentials: apiKey is required');
+    }
+    return { apiKey: (creds as any).apiKey.trim() };
+  }
+
+  private authHeaders(apiKey: string): Record<string, string> {
+    return {
+      'access-token': apiKey,
+      'Content-Type': 'application/json'
+    };
   }
 
   /**
    * Create a PIX payment. `input.externalCustomerId` must be provided (resolved via capabilities).
    */
-  async createPayment(input: NormalizedPaymentInput, _: AsaasCredentials): Promise<NormalizedPaymentResult> {
+  async createPayment(input: NormalizedPaymentInput, creds: GatewayCredentials): Promise<NormalizedPaymentResult> {
+    const validated = this.validateCredentials(creds);
     if (!input.externalCustomerId) {
       throw new Error('External customer ID is required for Asaas payments');
     }
-    const url = `${this.baseUrl(this.connection.environment)}/payments`;
+    const url = `${this.getBaseUrl(creds)}/payments`;
     const body = {
       customer: input.externalCustomerId,
       billingType: 'PIX',
@@ -47,27 +68,34 @@ export class AsaasProvider implements PaymentProvider {
     };
     const res = await fetch(url, {
       method: 'POST',
-      headers: this.authHeaders(),
+      headers: this.authHeaders(validated.apiKey),
       body: JSON.stringify(body)
     });
     if (!res.ok) {
       const err = await res.text();
       throw new Error(`Asaas createPayment failed: ${res.status} ${err}`);
     }
-    const data = await res.json();
+    const data: any = await res.json();
     const providerPaymentId = data.id;
+
     // Retrieve QR code details
-    const qrRes = await fetch(`${this.baseUrl(this.connection.environment)}/payments/${providerPaymentId}/pixQrCode`, {
+    const qrRes = await fetch(`${this.getBaseUrl(creds)}/payments/${providerPaymentId}/pixQrCode`, {
       method: 'GET',
-      headers: this.authHeaders()
+      headers: this.authHeaders(validated.apiKey)
     });
-    const qrData = await qrRes.json();
+    if (!qrRes.ok) {
+      const qrErr = await qrRes.text();
+      throw new Error(`Asaas pixQrCode failed: ${qrRes.status} ${qrErr}`);
+    }
+    const qrData: any = await qrRes.json();
     const pixDetails = {
       qrCode: qrData.encodedImage || '',
-      payload: qrData.payload || '',
+      qrCodeUrl: qrData.payload || '',
       expiresAt: qrData.expirationDate || ''
     };
-    const status = this.normalizeStatus(data.status);
+    const normalized = this.normalizeStatus(data.status);
+    const status: 'PENDING' | 'AUTHORIZED' | 'PAID' | 'FAILED' | 'CANCELLED' =
+      normalized === 'PAID' ? 'PAID' : (normalized === 'AUTHORIZED' ? 'AUTHORIZED' : (normalized === 'CANCELLED' ? 'CANCELLED' : (normalized === 'FAILED' ? 'FAILED' : 'PENDING')));
     return {
       providerPaymentId,
       status,
@@ -79,27 +107,40 @@ export class AsaasProvider implements PaymentProvider {
     };
   }
 
-  async getPayment(providerPaymentId: string, _: AsaasCredentials): Promise<NormalizedPaymentStatus> {
-    const url = `${this.baseUrl(this.connection.environment)}/payments/${providerPaymentId}`;
-    const res = await fetch(url, { method: 'GET', headers: this.authHeaders() });
-    if (!res.ok) throw new Error('Asaas getPayment failed');
-    const data = await res.json();
+  async getPayment(providerPaymentId: string, creds: GatewayCredentials): Promise<NormalizedPaymentStatus> {
+    const validated = this.validateCredentials(creds);
+    const url = `${this.getBaseUrl(creds)}/payments/${providerPaymentId}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: this.authHeaders(validated.apiKey)
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Asaas getPayment failed: ${res.status} ${err}`);
+    }
+    const data: any = await res.json();
     const status = this.normalizeStatus(data.status);
     return {
       status,
-      amount: Number(data.value) * 100,
+      amount: Math.round(Number(data.value) * 100),
       currency: 'BRL',
-      fee: data.gatewayFee ? Number(data.gatewayFee) * 100 : undefined,
-      netAmount: data.netValue ? Number(data.netValue) * 100 : undefined,
-      dateApproved: data.paymentDate
+      fee: data.gatewayFee != null ? Math.round(Number(data.gatewayFee) * 100) : undefined,
+      netAmount: data.netValue != null ? Math.round(Number(data.netValue) * 100) : undefined,
+      dateApproved: data.paymentDate || data.confirmedDate
     };
   }
 
-  async verifyWebhook(headers: Record<string, string>, _: any, rawBody: string, secret: string): Promise<WebhookVerificationResult> {
-    const token = headers['asaas-access-token'];
-    const isValid = token === secret;
-    const payload = JSON.parse(rawBody);
-    const resourceId = payload.id || '';
+  async verifyWebhook(headers: Record<string, string>, rawBody: string, secret: string): Promise<WebhookVerificationResult> {
+    const token = headers['asaas-access-token'] || headers['Asaas-Access-Token'] || '';
+    const isValid = Boolean(secret && token === secret);
+    let payload: any = {};
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      payload = {};
+    }
+    const paymentObj = payload.payment || {};
+    const resourceId = paymentObj.id || payload.id || '';
     const eventType = payload.event || '';
     const eventDedupKey = `${eventType}:${resourceId}`;
     return { isValid, eventDedupKey, resourceId, eventType };
@@ -108,15 +149,20 @@ export class AsaasProvider implements PaymentProvider {
   normalizeStatus(providerStatus: string): 'PENDING' | 'AUTHORIZED' | 'PAID' | 'FAILED' | 'CANCELLED' | 'REFUNDED' | 'CHARGEBACK' {
     switch (providerStatus) {
       case 'RECEIVED':
-      case 'PENDING':
-        return 'PENDING';
       case 'CONFIRMED':
         return 'PAID';
-      case 'CANCELLED':
-        return 'CANCELLED';
+      case 'PENDING':
+      case 'AWAITING_RISK_ANALYSIS':
+        return 'PENDING';
       case 'REFUNDED':
         return 'REFUNDED';
+      case 'CANCELLED':
+        return 'CANCELLED';
       case 'CHARGEBACK':
+      case 'REFUND_REQUESTED':
+      case 'CHARGEBACK_REQUESTED':
+      case 'CHARGEBACK_DISPUTE':
+      case 'AWAITING_CHARGEBACK_REVERSAL':
         return 'CHARGEBACK';
       default:
         return 'FAILED';
@@ -124,43 +170,69 @@ export class AsaasProvider implements PaymentProvider {
   }
 
   // --- External Customer Capabilities ---
-  private async reconcileExternalCustomer(params: {
-    customerId: string;
-    connectionId: string;
-    normalizedCustomer: { name: string; email: string; document?: string };
-  }): Promise<string | null> {
-    const url = `${this.baseUrl(this.connection.environment)}/customers?externalReference=pub_customer:${params.customerId}`;
-    const res = await fetch(url, { method: 'GET', headers: this.authHeaders() });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0) return null;
-    if (data.length > 1) throw new Error('Multiple external customers found');
-    return data[0].id ?? null;
+  async reconcileExternalCustomer(
+    params: {
+      customerId: string;
+      connectionId: string;
+      normalizedCustomer: { name: string; email: string; document?: string };
+    },
+    creds: GatewayCredentials
+  ): Promise<string | null> {
+    const validated = this.validateCredentials(creds);
+    const extRef = getExternalReference(params.customerId);
+    const url = `${this.getBaseUrl(creds)}/customers?externalReference=${encodeURIComponent(extRef)}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: this.authHeaders(validated.apiKey)
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Asaas reconcileExternalCustomer failed: ${res.status} ${err}`);
+    }
+    const data: any = await res.json();
+    const customerList = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+    if (customerList.length === 0) {
+      return null;
+    }
+    if (customerList.length > 1) {
+      throw new Error(`Multiple external customers found for reference ${extRef}`);
+    }
+    return customerList[0].id ?? null;
   }
 
-  private async createExternalCustomer(params: {
-    connectionId: string;
-    normalizedCustomer: { name: string; email: string; document?: string };
-    idempotencyKey?: string;
-  }): Promise<{ externalId: string; metadata?: Record<string, unknown> }> {
-    const externalReference = `pub_customer:${params.normalizedCustomer.email}`;
-    const url = `${this.baseUrl(this.connection.environment)}/customers`;
-    const body = {
+  async createExternalCustomer(
+    params: {
+      customerId: string;
+      connectionId: string;
+      normalizedCustomer: { name: string; email: string; document?: string };
+      idempotencyKey?: string;
+    },
+    creds: GatewayCredentials
+  ): Promise<{ externalId: string; metadata?: Record<string, unknown> }> {
+    const validated = this.validateCredentials(creds);
+    const extRef = getExternalReference(params.customerId);
+    const url = `${this.getBaseUrl(creds)}/customers`;
+    const body: Record<string, any> = {
       name: params.normalizedCustomer.name,
       email: params.normalizedCustomer.email,
-      cpfCnpj: params.normalizedCustomer.document,
-      externalReference
+      externalReference: extRef
     };
+    if (params.normalizedCustomer.document) {
+      body.cpfCnpj = params.normalizedCustomer.document;
+    }
     const res = await fetch(url, {
       method: 'POST',
-      headers: this.authHeaders(),
+      headers: this.authHeaders(validated.apiKey),
       body: JSON.stringify(body)
     });
     if (!res.ok) {
       const err = await res.text();
       throw new Error(`Asaas createExternalCustomer failed: ${res.status} ${err}`);
     }
-    const data = await res.json();
+    const data: any = await res.json();
+    if (!data?.id) {
+      throw new Error('Asaas createExternalCustomer response missing customer ID');
+    }
     return { externalId: data.id };
   }
 }

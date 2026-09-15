@@ -4,10 +4,18 @@ import { handleCustomerRequest } from './handlers/customer';
 import { handleGuestCartRequest, handleAuthCartRequest } from './handlers/cart';
 import { handleCatalogRequest } from './handlers/catalog';
 import { handleCheckoutRequest } from './handlers/checkout';
+import { handleWebhookRequest } from './handlers/webhook';
 
 async function dispatch(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const path = url.pathname;
+
+  if (path.startsWith('/api/webhooks/payments/')) {
+    if (['POST'].includes(req.method)) {
+      return await handleWebhookRequest(req);
+    }
+    return new Response(null, { status: 405 });
+  }
 
   if (path.startsWith('/api/customer')) {
     if (['GET', 'POST', 'PATCH'].includes(req.method)) {
