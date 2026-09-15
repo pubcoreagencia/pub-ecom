@@ -5,6 +5,7 @@ import { handleGuestCartRequest, handleAuthCartRequest } from './handlers/cart';
 import { handleCatalogRequest } from './handlers/catalog';
 import { handleCheckoutRequest } from './handlers/checkout';
 import { handleWebhookRequest } from './handlers/webhook';
+import { handlePaymentRequest } from './handlers/payment';
 
 async function dispatch(req: Request): Promise<Response> {
   const url = new URL(req.url);
@@ -41,6 +42,13 @@ async function dispatch(req: Request): Promise<Response> {
   if (path.startsWith('/api/catalog')) {
     if (['GET'].includes(req.method)) {
       return await withStoreContext(handleCatalogRequest)(req);
+    }
+    return new Response(null, { status: 405 });
+  }
+
+  if (path.startsWith('/api/payment')) {
+    if (['GET', 'POST'].includes(req.method)) {
+      return await withStoreContext(handlePaymentRequest)(req);
     }
     return new Response(null, { status: 405 });
   }

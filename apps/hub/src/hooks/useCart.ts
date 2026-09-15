@@ -2,15 +2,16 @@ import { useState, useEffect } from "react";
 import { Product } from "@/types";
 import { toast } from "sonner";
 
+const CART_STORAGE_KEY = "pubecom_cart";
+
 export interface CartItem extends Product {
   quantity: number;
 }
 
-const CART_STORAGE_KEY = "pubecom_cart";
-
 export function useCart() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -23,6 +24,7 @@ export function useCart() {
       }
     }
     setIsHydrated(true);
+    setIsLoading(false);
   }, []);
 
   // Save to localStorage when items change
@@ -64,5 +66,6 @@ export function useCart() {
     totalItems,
     totalPrice,
     isHydrated,
+    isLoading,
   };
 }

@@ -3,18 +3,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShoppingBag, ArrowLeft, Trash2, Plus, Minus, ShieldCheck, Truck, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useCart } from "@/hooks/useCart";
 import { Card, CardContent } from "@/components/ui/card";
-import { mockProducts } from "@/data/mock";
 
 export const Route = createFileRoute("/store/cart")({
   component: StorefrontCartB,
 });
 
 function StorefrontCartB() {
-  const cartItems = [
-    { ...mockProducts[0], quantity: 1 },
-    { ...mockProducts[1], quantity: 2 },
-  ];
+  const { items: cartItems, addToCart, removeFromCart, clearCart } = useCart();
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price ?? 0) * item.quantity, 0);
 
