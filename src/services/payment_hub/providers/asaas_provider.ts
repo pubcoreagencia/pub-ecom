@@ -45,8 +45,9 @@ export class AsaasProvider implements PaymentProvider {
 
   private authHeaders(apiKey: string): Record<string, string> {
     return {
-      'access-token': apiKey,
-      'Content-Type': 'application/json'
+      'access_token': apiKey,
+      'Content-Type': 'application/json',
+      'User-Agent': 'PUB-Ecom'
     };
   }
 
@@ -197,7 +198,19 @@ export class AsaasProvider implements PaymentProvider {
     if (customerList.length > 1) {
       throw new Error(`Multiple external customers found for reference ${extRef}`);
     }
-    return customerList[0].id ?? null;
+    const existing = customerList[0];
+    if (params.normalizedCustomer.document && (!existing.cpfCnpj || existing.cpfCnpj !== params.normalizedCustomer.document)) {
+      const updateRes = await fetch(`${this.getBaseUrl(creds)}/customers/${existing.id}`, {
+        method: 'PUT',
+        headers: this.authHeaders(validated.apiKey),
+        body: JSON.stringify({ cpfCnpj: params.normalizedCustomer.document })
+      });
+      if (!updateRes.ok) {
+        const updateErr = await updateRes.text();
+        throw new Error(`Asaas update customer cpfCnpj failed: ${updateRes.status} ${updateErr}`);
+      }
+    }
+    return existing.id ?? null;
   }
 
   async createExternalCustomer(

@@ -154,7 +154,7 @@ async function runUnitTests() {
     assert.strictEqual(sentBody.email, 'maria@example.com');
     assert.strictEqual(sentBody.cpfCnpj, '12345678901');
     assert.strictEqual(sentBody.externalReference, 'pub_customer:cust-uuid-42');
-    assert.strictEqual(sentHeaders['access-token'], 'TEST_ASAAS_KEY');
+    assert.strictEqual(sentHeaders['access_token'], 'TEST_ASAAS_KEY');
     console.log('[PASS] Customer creation with deterministic externalReference and document');
   }
 
