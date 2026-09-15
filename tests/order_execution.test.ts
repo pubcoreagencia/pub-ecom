@@ -134,20 +134,21 @@ async function run() {
     assert.strictEqual(item1.snapshot_sku, vA.sku);
     assert.strictEqual(item1.snapshot_name, 'Store Prod A');
 
-    // Verify inventory transition: reserved 2 -> committed 2, on_hand untouched
+    // Verify inventory transition: RESERVED preserved (not COMMITTED) per V1 lifecycle (00020)
     const invPost1 = (await adminClient.from('master_inventory').select('*').eq('master_variant_id', vA.id).single()).data!;
-    assert.strictEqual(invPost1.reserved, 0, 'Reserved stock decremented');
-    assert.strictEqual(invPost1.committed, 2, 'Committed stock incremented');
+    assert.strictEqual(invPost1.reserved, 2, 'Reserved stock preserved (ACTIVE)');
+    assert.strictEqual(invPost1.committed, 0, 'Committed stock remains 0 until settlement');
     assert.strictEqual(invPost1.on_hand, 50, 'on_hand remains unchanged');
 
-    // Verify reservations status
+    // Verify reservations status (ACTIVE, not COMMITTED — 00020 removes STEP 10 from complete_checkout)
     const resPost1 = (await adminClient.from('inventory_reservations').select('*').eq('checkout_id', chk1Id).single()).data!;
-    assert.strictEqual(resPost1.status, 'COMMITTED');
+    assert.strictEqual(resPost1.status, 'ACTIVE');
 
-    // Verify movements
-    const move1 = (await adminClient.from('inventory_movements').select('*').eq('reference_id', orderId1).single()).data!;
-    assert.strictEqual(move1.movement_type, 'COMMIT');
-    assert.strictEqual(move1.quantity, 2);
+    // Verify inventory movement for reservation (RESERVE at checkout; COMMIT only after settlement via settle_payment_inventory)
+        // Per V1 lifecycle (00020), complete_checkout does NOT create COMMIT movement — only RESERVE.
+        const moveRes = (await adminClient.from('inventory_movements').select('*').eq('reference_id', chk1Id).eq('movement_type', 'RESERVE').single()).data!;
+        assert.ok(moveRes, 'RESERVE movement registered at checkout');
+        assert.strictEqual(moveRes.quantity, 2);
 
     // Verify shipping line & address
     const shipLine1 = (await adminClient.from('order_shipping_lines').select('*').eq('order_id', orderId1).single()).data!;
@@ -180,9 +181,10 @@ async function run() {
     const allOrdersChk1 = (await adminClient.from('orders').select('*').eq('checkout_id', chk1Id)).data!;
     assert.strictEqual(allOrdersChk1.length, 1, 'Only 1 order exists for checkout');
 
-    // Verify inventory not committed twice
+    // Verify inventory preserved (reserved = 2, committed = 0) — complete_checkout is idempotent and does NOT commit inventory
     const invPostRepeat = (await adminClient.from('master_inventory').select('*').eq('master_variant_id', vA.id).single()).data!;
-    assert.strictEqual(invPostRepeat.committed, 2, 'Committed stock must not increment twice');
+    assert.strictEqual(invPostRepeat.reserved, 2, 'Reserved preserved by idempotent complete_checkout');
+    assert.strictEqual(invPostRepeat.committed, 0, 'Committed unchanged (settlement required)');
 
     // =========================================================================
     // TEST 3: GUEST CHECKOUT COMPLETION (CREATES GUEST CUSTOMER)
