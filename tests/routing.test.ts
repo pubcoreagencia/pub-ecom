@@ -105,8 +105,17 @@ async function runRoutingTests() {
   try {
     console.log('== ROUTING TESTS ==');
 
+    // 0. public health endpoint for deployment probes
+    let res = await rawFetch('/health', { headers: { host: testHost }});
+    const health = await res.json();
+    assert(res.status === 200, 'Health endpoint returns 200');
+    assert(health.status === 'ok', 'Health endpoint reports ok');
+
+    res = await rawFetch('/health', { method: 'POST', headers: { host: testHost }});
+    assert(res.status === 405, 'Health endpoint rejects unsupported methods');
+
     // 13. unknown route returns 404
-    let res = await rawFetch(`/api/unknown`, { headers: { host: testHost }});
+    res = await rawFetch(`/api/unknown`, { headers: { host: testHost }});
     assert(res.status === 404, 'Unknown route returns 404');
 
     // 14. unsupported method returns 405
