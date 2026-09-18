@@ -13,8 +13,11 @@ ASAAS GATE B / DEPLOYMENT READINESS
 Payment Lifecycle V1 is merged to `master` at:
 `b8665b7c9c106caa9142d5ca52a463031c424482`
 
-Current working branch:
-`feat/asaas-gate-b-deploy-readiness`
+Deployment readiness is merged to `master` at:
+`0089889f8261476478375caa0cc127d47d8dabb5`
+
+Current master baseline:
+`0089889f8261476478375caa0cc127d47d8dabb5`
 
 ## Database
 
@@ -133,4 +136,4 @@ Remote:
 https://github.com/pubcoreagencia/pub-ecom.git
 
 `master` baseline:
-`b8665b7c9c106caa9142d5ca52a463031c424482`
+`0089889f8261476478375caa0cc127d47d8dabb5`
