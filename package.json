@@ -6,10 +6,11 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "npx tsx tests/foundation.test.ts && npx tsx tests/identity.test.ts && npx tsx tests/tenant.test.ts && npx tsx tests/catalog.test.ts && npx tsx tests/media.test.ts && npx tsx tests/commerce.test.ts && npx tsx tests/routing.test.ts && npx tsx tests/checkout.test.ts && npx tsx tests/api_checkout.test.ts && npx tsx tests/order_execution.test.ts && npx tsx tests/payment_hub_foundation.test.ts && npx tsx tests/api/asaas_webhook.test.ts",
+    "test": "npx tsx tests/foundation.test.ts && npx tsx tests/identity.test.ts && npx tsx tests/tenant.test.ts && npx tsx tests/catalog.test.ts && npx tsx tests/media.test.ts && npx tsx tests/commerce.test.ts && npx tsx tests/routing.test.ts && npx tsx tests/checkout.test.ts && npx tsx tests/api_checkout.test.ts && npx tsx tests/order_execution.test.ts && npx tsx tests/payment_hub_foundation.test.ts && npx tsx tests/payment_lifecycle_v1_regression.test.ts && npx tsx tests/api/asaas_webhook.test.ts",
     "test:asaas:sandbox": "npx tsx tests/services/payment_hub/providers/asaas_sandbox.test.ts",
     "test:asaas:webhook": "npx tsx tests/api/asaas_webhook.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:payment:lifecycle": "npx tsx tests/payment_lifecycle_v1_regression.test.ts"
   },
   "keywords": [],
   "author": "",
