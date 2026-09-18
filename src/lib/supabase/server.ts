@@ -1,16 +1,11 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../../../types/supabase';
-import { env } from '../../config/env';
+import { createNeonClient } from '../neon/compat';
 
-// Authenticated server client (Forwards access token, respects RLS)
+/**
+ * Server database client. Neon Auth bearer tokens are verified by the
+ * compatibility client's auth.getUser() implementation.
+ */
 export function createServerClient(accessToken: string): SupabaseClient<Database> {
-  const { SUPABASE_URL, SUPABASE_ANON_KEY } = env.public;
-  
-  return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: {
-      headers: accessToken ? {
-        Authorization: `Bearer ${accessToken}`
-      } : undefined
-    }
-  });
+  return createNeonClient(accessToken) as unknown as SupabaseClient<Database>;
 }
