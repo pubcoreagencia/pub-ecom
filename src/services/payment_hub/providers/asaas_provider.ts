@@ -33,7 +33,7 @@ export class AsaasProvider implements PaymentProvider {
 
   private getBaseUrl(creds?: GatewayCredentials): string {
     const env = (creds?.environment as string) || this.options?.environment || process.env.APP_ENVIRONMENT || 'SANDBOX';
-    return env === 'PRODUCTION' ? 'https://api-asaas.com/v3' : 'https://api-sandbox.asaas.com/v3';
+    return env === 'PRODUCTION' ? 'https://api.asaas.com/v3' : 'https://api-sandbox.asaas.com/v3';
   }
 
   private validateCredentials(creds: GatewayCredentials): AsaasCredentials {
