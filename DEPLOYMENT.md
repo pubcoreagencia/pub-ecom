@@ -30,27 +30,50 @@ Expected response:
 
 The endpoint is intentionally independent of tenant/store resolution and is suitable for a platform health check.
 
-## Required environment
+## Required production environment
 
-Server:
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+Neon / database:
+- `DATABASE_URL`
+- `NEON_AUTH_JWKS_URL`
 - `ALLOWED_ORIGINS`
 
-Public Supabase compatibility variables used by the shared config:
-- `SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+The production API uses Neon Postgres through the compatibility layer in `src/lib/neon/compat.ts`.
+
+Legacy Supabase variables remain supported only for the local regression harness:
 - `SUPABASE_URL` or `NEXT_PUBLIC_SUPABASE_URL`
+- `SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
-Operational rule:
-- production secrets must be configured only in the deployment platform;
+Operational rules:
+- production secrets are configured only in Render;
 - never commit credentials;
-- service-role credentials stay server-side.
+- the database connection string stays server-side;
+- Render must use the Neon production variables when `DATABASE_URL` is present.
 
-## Supabase
+## Neon
 
-The deployed service must point to the intended PUB ECOM Supabase project.
+Production database:
+- provider: Neon Free
+- region: São Paulo
+- PostgreSQL 17
+- project: `pub-ecom`
+- migrations: `00001` through `00022`
+- Neon Auth enabled
+- Neon Data API enabled
 
-Before external webhook testing, the target database must contain migrations `00001` through `00022`.
+The database schema was reconstructed from the repository's current migrations. Supabase `auth.users` foreign keys are adapted to Neon Auth's `neon_auth.user` table, while the compatibility `auth.uid()` function remains available for the existing RLS policies.
+
+## Render
+
+Production API host:
+`https://pub-ecom.onrender.com`
+
+Deployment target:
+- service: `pub-ecom`
+- plan: Free
+- runtime: Node
+- build: `npm install && npm run build`
+- start: `npm start`
 
 ## Asaas webhook
 
@@ -92,9 +115,3 @@ Production:
 - Asaas base URL: `https://api.asaas.com/v3`
 
 Never mix sandbox credentials/endpoints with production credentials/endpoints.
-
-## Current infrastructure state
-
-The code is deployment-ready for a Node HTTP service.
-
-Railway provisioning is currently blocked by the account's Free-plan resource provisioning limit. No production or staging deployment is claimed from this repository checkpoint.
