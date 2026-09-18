@@ -32,6 +32,9 @@ jobs:
       - name: Reset database
         run: npx supabase@latest db reset
 
+      - name: Build
+        run: npm run build
+
       - name: Typecheck
         run: npm run typecheck
 
