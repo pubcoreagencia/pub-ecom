@@ -8,12 +8,12 @@ Store = commercial boundary.
 
 ## Current Phase
 
-ASAAS GATE B / ZERO-COST PUBLIC DEPLOYMENT
+ASAAS GATE B / REAL PUBLIC WEBHOOK
 
 Payment Lifecycle V1 is merged to `master`.
 
 Current working branch:
-`feat/neon-render-zero-cost`
+`master`
 
 ## Database
 
@@ -29,14 +29,15 @@ Neon project:
 - Neon Auth enabled
 - Neon Data API enabled
 
-The current ECOM schema was applied through migration `00022`. The migration process preserves the existing business schema and adapts Supabase Auth references to Neon Auth's managed `neon_auth.user` table.
+The current ECOM schema is present through migration `00022`.
+The production path uses the existing business schema with Supabase Auth references compatible with Neon Auth's managed `neon_auth.user` table.
 
 ## Runtime Compatibility
 
 Production server database access is implemented in:
 `src/lib/neon/compat.ts`
 
-The compatibility layer preserves the existing `SupabaseClient` surface used by the application while executing against PostgreSQL with the `pg` driver.
+The compatibility layer preserves the existing application database surface while executing against PostgreSQL with the `pg` driver.
 
 Supported application operations include:
 - `from`
@@ -54,7 +55,7 @@ Supported application operations include:
 - `maybeSingle`
 - `rpc`
 
-Legacy Supabase clients remain available as a local CI fallback when `DATABASE_URL` is absent.
+Legacy Supabase clients remain available as the local CI fallback when `DATABASE_URL` is absent.
 
 ## Payment Lifecycle V1
 
@@ -114,6 +115,10 @@ Required production server configuration:
 - `DATABASE_URL`
 - `NEON_AUTH_JWKS_URL`
 - `ALLOWED_ORIGINS`
+- `APP_ENVIRONMENT`
+
+For the current Gate B stage:
+`APP_ENVIRONMENT=SANDBOX`
 
 Local CI fallback:
 - `SUPABASE_URL`
@@ -124,7 +129,8 @@ Secrets remain outside version control.
 
 ## Testing
 
-GitHub Actions validates the existing local Supabase regression harness. Production Neon schema was independently checked after applying migrations `00001` → `00022`.
+GitHub Actions continues to validate the local Supabase regression harness.
+The Neon production schema was independently verified with 44 public tables and the critical payment lifecycle RPCs present.
 
 ## Asaas Gate B
 
@@ -136,6 +142,8 @@ Required external proof:
 5. token/signature verification accepted;
 6. payment/order/inventory committed;
 7. replay deduplicated.
+
+The remaining operational dependency is an active Asaas Sandbox connection in `gateway_connections`.
 
 ## Infrastructure
 
@@ -150,5 +158,5 @@ Railway is not used for ECOM because its Free resource quota blocked provisionin
 Remote:
 https://github.com/pubcoreagencia/pub-ecom.git
 
-Current production baseline before this migration:
-`0089889f8261476478375caa0cc127d47d8dabb5`
+Production source of truth:
+`master`
