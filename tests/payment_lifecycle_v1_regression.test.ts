@@ -85,7 +85,7 @@ async function run() {
     reserved: 4,
     committed: 0
   });
-  assert.ok(!invInsert.error, invInsert.error?.message);
+  assert.ok(!invInsert.error, invInsert.error?.message ?? 'inventory insert failed');
 
   const orders: string[] = [];
   const payments: string[] = [];
@@ -174,7 +174,7 @@ async function run() {
       p_net_amount: 0,
       p_verified_outcome: 'REJECTED'
     });
-    assert.ok(!rejected.error, rejected.error?.message);
+    assert.ok(!rejected.error, rejected.error?.message ?? 'rejected settlement failed');
     assert.strictEqual(rejected.data, false);
 
     const invA = (await client.from('master_inventory')
@@ -205,11 +205,11 @@ async function run() {
     };
 
     const first = await client.rpc('settle_payment_lifecycle', successArgs);
-    assert.ok(!first.error, first.error?.message);
+    assert.ok(!first.error, first.error?.message ?? 'successful settlement failed');
     assert.strictEqual(first.data, true);
 
     const replay = await client.rpc('settle_payment_lifecycle', successArgs);
-    assert.ok(!replay.error, replay.error?.message);
+    assert.ok(!replay.error, replay.error?.message ?? 'successful replay failed');
     assert.strictEqual(replay.data, true);
 
     const invB = (await client.from('master_inventory')
@@ -240,9 +240,9 @@ async function run() {
 
     const c = await fixture('C');
     const cancel1 = await client.rpc('cancel_pending_payment_order', { p_order_id: c.order });
-    assert.ok(!cancel1.error, cancel1.error?.message);
+    assert.ok(!cancel1.error, cancel1.error?.message ?? 'first cancellation failed');
     const cancel2 = await client.rpc('cancel_pending_payment_order', { p_order_id: c.order });
-    assert.ok(!cancel2.error, cancel2.error?.message);
+    assert.ok(!cancel2.error, cancel2.error?.message ?? 'cancellation replay failed');
 
     const invC = (await client.from('master_inventory')
       .select('reserved, committed')
