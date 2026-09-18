@@ -26,7 +26,7 @@ async function run() {
     name: 'Lifecycle Regression Org',
     document: 'LIFE' + suffix
   }).select('id').single()).data;
-  assert.ok(org);
+  if (!org) throw new Error('org setup failed');
 
   const store = (await client.from('stores').insert({
     organization_id: org.id,
@@ -34,14 +34,14 @@ async function run() {
     slug: 'life-' + suffix,
     status: 'ACTIVE'
   }).select('id').single()).data;
-  assert.ok(store);
+  if (!store) throw new Error('store setup failed');
 
   const customer = (await client.from('customers').insert({
     organization_id: org.id,
     email: 'life-' + suffix + '@pub.test',
     full_name: 'Lifecycle Regression Customer'
   }).select('id').single()).data;
-  assert.ok(customer);
+  if (!customer) throw new Error('customer setup failed');
 
   await client.from('gateway_providers').upsert({
     id: 'asaas',
@@ -57,26 +57,26 @@ async function run() {
     is_global_default: false,
     encrypted_credentials: cipher.encrypt({ apiKey: 'REGRESSION_TEST_KEY' })
   }).select('id').single()).data;
-  assert.ok(connection);
+  if (!connection) throw new Error('connection setup failed');
 
   const supplier = (await client.from('suppliers').insert({
     name: 'Lifecycle Regression Supplier'
   }).select('id').single()).data;
-  assert.ok(supplier);
+  if (!supplier) throw new Error('supplier setup failed');
 
   const product = (await client.from('master_products').insert({
     supplier_id: supplier.id,
     base_sku: 'LIFE-BASE-' + suffix,
     name: 'Lifecycle Regression Product'
   }).select('id').single()).data;
-  assert.ok(product);
+  if (!product) throw new Error('product setup failed');
 
   const variant = (await client.from('master_product_variants').insert({
     master_product_id: product.id,
     sku: 'LIFE-SKU-' + suffix,
     cost_price: 10
   }).select('id').single()).data;
-  assert.ok(variant);
+  if (!variant) throw new Error('variant setup failed');
 
   const invInsert = await client.from('master_inventory').insert({
     master_variant_id: variant.id,
