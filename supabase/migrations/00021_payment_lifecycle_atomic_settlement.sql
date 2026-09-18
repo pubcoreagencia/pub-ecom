@@ -24,6 +24,7 @@ DECLARE
     v_order record;
     v_checkout_id uuid;
     v_res record;
+    v_already_settled boolean := false;
 BEGIN
     -- Lock in deterministic order: payment -> transaction -> order.
     SELECT * INTO v_payment
@@ -62,11 +63,16 @@ BEGIN
 
     -- A previously settled payment is immutable except for a replay of its
     -- exact winning transaction.
-    IF v_payment.status IN ('PAID', 'REFUNDED', 'PARTIALLY_REFUNDED', 'CHARGEBACK') THEN
-        IF p_verified_outcome = 'SUCCESS' AND v_payment.settled_transaction_id = p_transaction_id THEN
-            RETURN true;
-        END IF;
+    IF v_payment.status IN ('REFUNDED', 'PARTIALLY_REFUNDED', 'CHARGEBACK') THEN
         RAISE EXCEPTION 'PAYMENT_ALREADY_SETTLED_BY_ANOTHER_TRANSACTION';
+    END IF;
+
+    IF v_payment.status = 'PAID' THEN
+        IF p_verified_outcome = 'SUCCESS' AND v_payment.settled_transaction_id = p_transaction_id THEN
+            v_already_settled := true;
+        ELSE
+            RAISE EXCEPTION 'PAYMENT_ALREADY_SETTLED_BY_ANOTHER_TRANSACTION';
+        END IF;
     END IF;
 
     -- Economic invariants are required for both success and rejection.
@@ -80,7 +86,7 @@ BEGIN
         RAISE EXCEPTION 'PAYMENT_CURRENCY_MISMATCH';
     END IF;
 
-    IF v_tx.status != 'PROCESSING' THEN
+    IF v_tx.status != 'PROCESSING' AND NOT (v_already_settled AND v_tx.status = 'SUCCESS') THEN
         RAISE EXCEPTION 'TRANSACTION_NOT_IN_PROCESSING';
     END IF;
 
@@ -101,24 +107,26 @@ BEGIN
 
     -- SUCCESS: payment, order, transaction and inventory commit happen in
     -- this single database transaction.
-    UPDATE public.payment_transactions
-    SET status = 'SUCCESS',
-        transaction_id_external = p_transaction_id_external
-    WHERE id = p_transaction_id;
+    IF NOT v_already_settled THEN
+        UPDATE public.payment_transactions
+        SET status = 'SUCCESS',
+            transaction_id_external = p_transaction_id_external
+        WHERE id = p_transaction_id;
 
-    UPDATE public.payments
-    SET status = 'PAID',
-        gateway_fee = p_gateway_fee,
-        net_amount = p_net_amount,
-        settled_gateway_connection_id = p_connection_id,
-        settled_transaction_id = p_transaction_id,
-        updated_at = NOW()
-    WHERE id = p_payment_id;
+        UPDATE public.payments
+        SET status = 'PAID',
+            gateway_fee = p_gateway_fee,
+            net_amount = p_net_amount,
+            settled_gateway_connection_id = p_connection_id,
+            settled_transaction_id = p_transaction_id,
+            updated_at = NOW()
+        WHERE id = p_payment_id;
 
-    UPDATE public.orders
-    SET status = 'PAID',
-        updated_at = NOW()
-    WHERE id = v_payment.order_id;
+        UPDATE public.orders
+        SET status = 'PAID',
+            updated_at = NOW()
+        WHERE id = v_payment.order_id;
+    END IF;
 
     v_checkout_id := v_order.checkout_id;
 
