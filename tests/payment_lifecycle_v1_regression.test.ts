@@ -14,7 +14,7 @@ async function getClient() {
     key = status.SERVICE_ROLE_KEY;
   }
   if (!key) throw new Error('SERVICE_ROLE_KEY unavailable');
-  return createClient<Database>(url, key, { auth: { persistSession: false } });
+  return createClient<Database>(url, key!, { auth: { persistSession: false } });
 }
 
 async function run() {
@@ -30,7 +30,7 @@ async function run() {
   if (!org) throw new Error('org setup failed');
 
   const store = (await client.from('stores').insert({
-    organization_id: org.id,
+    organization_id: org!.id,
     name: 'Lifecycle Regression Store',
     slug: 'life-' + suffix,
     status: 'ACTIVE'
@@ -38,7 +38,7 @@ async function run() {
   if (!store) throw new Error('store setup failed');
 
   const customer = (await client.from('customers').insert({
-    organization_id: org.id,
+    organization_id: org!.id,
     email: 'life-' + suffix + '@pub.test',
     full_name: 'Lifecycle Regression Customer'
   }).select('id').single()).data;
@@ -51,7 +51,7 @@ async function run() {
   });
 
   const connection = (await client.from('gateway_connections').insert({
-    organization_id: org.id,
+    organization_id: org!.id,
     provider_id: 'asaas',
     environment: 'SANDBOX',
     status: 'ACTIVE',
@@ -66,21 +66,21 @@ async function run() {
   if (!supplier) throw new Error('supplier setup failed');
 
   const product = (await client.from('master_products').insert({
-    supplier_id: supplier.id,
+    supplier_id: supplier!.id,
     base_sku: 'LIFE-BASE-' + suffix,
     name: 'Lifecycle Regression Product'
   }).select('id').single()).data;
   if (!product) throw new Error('product setup failed');
 
   const variant = (await client.from('master_product_variants').insert({
-    master_product_id: product.id,
+    master_product_id: product!.id,
     sku: 'LIFE-SKU-' + suffix,
     cost_price: 10
   }).select('id').single()).data;
   if (!variant) throw new Error('variant setup failed');
 
   const invInsert = await client.from('master_inventory').insert({
-    master_variant_id: variant.id,
+    master_variant_id: variant!.id,
     on_hand: 20,
     reserved: 4,
     committed: 0
@@ -96,46 +96,46 @@ async function run() {
 
   async function fixture(tag: string) {
     const cart = (await client.from('carts').insert({
-      store_id: store.id,
-      customer_id: customer.id,
+      store_id: store!.id,
+      customer_id: customer!.id,
       status: 'COMPLETED'
     }).select('id').single()).data;
     if (!cart) throw new Error('cart setup failed');
-    carts.push(cart.id);
+    carts.push(cart!.id);
 
     const checkout = (await client.from('checkouts').insert({
-      cart_id: cart.id,
-      store_id: store.id,
+      cart_id: cart!.id,
+      store_id: store!.id,
       status: 'COMPLETED'
     }).select('id').single()).data;
     if (!checkout) throw new Error('checkout setup failed');
-    checkouts.push(checkout.id);
+    checkouts.push(checkout!.id);
 
     const reservation = (await client.from('inventory_reservations').insert({
-      master_variant_id: variant.id,
-      checkout_id: checkout.id,
+      master_variant_id: variant!.id,
+      checkout_id: checkout!.id,
       quantity: 2,
       status: 'ACTIVE',
       expires_at: new Date(Date.now() + 900000).toISOString()
     }).select('id').single()).data;
     if (!reservation) throw new Error('reservation setup failed');
-    reservations.push(reservation.id);
+    reservations.push(reservation!.id);
 
     const order = (await client.from('orders').insert({
-      organization_id: org.id,
-      store_id: store.id,
-      customer_id: customer.id,
-      checkout_id: checkout.id,
+      organization_id: org!.id,
+      store_id: store!.id,
+      customer_id: customer!.id,
+      checkout_id: checkout!.id,
       order_number: 'LIFE-' + tag + '-' + Date.now(),
       status: 'PENDING_PAYMENT',
       total_amount: 100,
       currency: 'BRL'
     }).select('id').single()).data;
     if (!order) throw new Error('order setup failed');
-    orders.push(order.id);
+    orders.push(order!.id);
 
     const payment = (await client.from('payments').insert({
-      order_id: order.id,
+      order_id: order!.id,
       provider: 'asaas',
       gross_amount: 100,
       currency: 'BRL',
@@ -143,11 +143,11 @@ async function run() {
       payment_method: 'PIX'
     }).select('id').single()).data;
     if (!payment) throw new Error('payment setup failed');
-    payments.push(payment.id);
+    payments.push(payment!.id);
 
     const tx = (await client.from('payment_transactions').insert({
-      payment_id: payment.id,
-      gateway_connection_id: connection.id,
+      payment_id: payment!.id,
+      gateway_connection_id: connection!.id,
       provider: 'asaas',
       idempotency_key: 'LIFE-' + tag + '-' + Date.now(),
       type: 'PAY',
@@ -156,9 +156,9 @@ async function run() {
       transaction_id_external: 'pay-life-' + tag
     }).select('id').single()).data;
     if (!tx) throw new Error('tx setup failed');
-    txs.push(tx.id);
+    txs.push(tx!.id);
 
-    return { checkout: checkout.id, reservation: reservation.id, order: order.id, payment: payment.id, tx: tx.id };
+    return { checkout: checkout!.id, reservation: reservation!.id, order: order!.id, payment: payment!.id, tx: tx!.id };
   }
 
   try {
@@ -166,7 +166,7 @@ async function run() {
     const rejected = await client.rpc('settle_payment_lifecycle', {
       p_payment_id: a.payment,
       p_transaction_id: a.tx,
-      p_connection_id: connection.id,
+      p_connection_id: connection!.id,
       p_transaction_id_external: 'pay-life-A',
       p_verified_amount: 100,
       p_verified_currency: 'BRL',
@@ -179,7 +179,7 @@ async function run() {
 
     const invA = (await client.from('master_inventory')
       .select('reserved, committed')
-      .eq('master_variant_id', variant.id).single()).data;
+      .eq('master_variant_id', variant!.id).single()).data;
     assert.deepStrictEqual(invA, { reserved: 4, committed: 0 });
 
     const resA = (await client.from('inventory_reservations')
@@ -195,7 +195,7 @@ async function run() {
     const successArgs = {
       p_payment_id: b.payment,
       p_transaction_id: b.tx,
-      p_connection_id: connection.id,
+      p_connection_id: connection!.id,
       p_transaction_id_external: 'pay-life-B',
       p_verified_amount: 100,
       p_verified_currency: 'BRL',
@@ -214,7 +214,7 @@ async function run() {
 
     const invB = (await client.from('master_inventory')
       .select('reserved, committed')
-      .eq('master_variant_id', variant.id).single()).data;
+      .eq('master_variant_id', variant!.id).single()).data;
     assert.deepStrictEqual(invB, { reserved: 2, committed: 2 });
 
     const resB = (await client.from('inventory_reservations')
@@ -223,7 +223,7 @@ async function run() {
 
     const movesB = (await client.from('inventory_movements')
       .select('id')
-      .eq('master_variant_id', variant.id)
+      .eq('master_variant_id', variant!.id)
       .eq('movement_type', 'COMMIT')
       .eq('reference_id', b.order));
     assert.strictEqual(movesB.data?.length, 1);
@@ -246,7 +246,7 @@ async function run() {
 
     const invC = (await client.from('master_inventory')
       .select('reserved, committed')
-      .eq('master_variant_id', variant.id).single()).data;
+      .eq('master_variant_id', variant!.id).single()).data;
     assert.deepStrictEqual(invC, { reserved: 2, committed: 2 });
 
     const resC = (await client.from('inventory_reservations')
@@ -260,7 +260,7 @@ async function run() {
 
     const movesC = (await client.from('inventory_movements')
       .select('id')
-      .eq('master_variant_id', variant.id)
+      .eq('master_variant_id', variant!.id)
       .eq('movement_type', 'RELEASE')
       .eq('reference_id', c.order));
     assert.strictEqual(movesC.data?.length, 1);
@@ -277,14 +277,14 @@ async function run() {
     for (const id of reservations) await client.from('inventory_reservations').delete().eq('id', id);
     for (const id of checkouts) await client.from('checkouts').delete().eq('id', id);
     for (const id of carts) await client.from('carts').delete().eq('id', id);
-    await client.from('master_inventory').delete().eq('master_variant_id', variant.id);
-    await client.from('master_product_variants').delete().eq('id', variant.id);
-    await client.from('master_products').delete().eq('id', product.id);
-    await client.from('suppliers').delete().eq('id', supplier.id);
-    await client.from('gateway_connections').delete().eq('id', connection.id);
-    await client.from('stores').delete().eq('id', store.id);
-    await client.from('customers').delete().eq('id', customer.id);
-    await client.from('organizations').delete().eq('id', org.id);
+    await client.from('master_inventory').delete().eq('master_variant_id', variant!.id);
+    await client.from('master_product_variants').delete().eq('id', variant!.id);
+    await client.from('master_products').delete().eq('id', product!.id);
+    await client.from('suppliers').delete().eq('id', supplier!.id);
+    await client.from('gateway_connections').delete().eq('id', connection!.id);
+    await client.from('stores').delete().eq('id', store!.id);
+    await client.from('customers').delete().eq('id', customer!.id);
+    await client.from('organizations').delete().eq('id', org!.id);
   }
 }
 
