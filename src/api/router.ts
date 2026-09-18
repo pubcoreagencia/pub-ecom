@@ -11,7 +11,17 @@ async function dispatch(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (path.startsWith('/api/webhooks/payments/')) {
+  if (path === '/health') {
+    if (req.method === 'GET') {
+      return new Response(JSON.stringify({ status: 'ok' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    return new Response(null, { status: 405 });
+  }
+
+  if (path.startsWith('/api/webhooks/payments/'));
     if (['POST'].includes(req.method)) {
       return await handleWebhookRequest(req);
     }
