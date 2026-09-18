@@ -121,8 +121,13 @@ async function run() {
     if (!reservation) throw new Error('reservation setup failed');
     reservations.push(reservation!.id);
 
+    const { data: currentInventory, error: inventoryReadError } = await client.from('master_inventory')
+      .select('reserved')
+      .eq('master_variant_id', variant!.id)
+      .single();
+    assert.ok(!inventoryReadError, inventoryReadError?.message ?? 'fixture inventory read failed');
     const reserveUpdate = await client.from('master_inventory')
-      .update({ reserved: 2 })
+      .update({ reserved: (currentInventory?.reserved ?? 0) + 2 })
       .eq('master_variant_id', variant!.id);
     assert.ok(!reserveUpdate.error, reserveUpdate.error?.message ?? 'fixture inventory reservation update failed');
 
