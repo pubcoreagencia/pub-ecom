@@ -1969,6 +1969,26 @@ export type Database = {
         }
         Returns: boolean
       }
+      cancel_pending_payment_order: {
+        Args: {
+          p_order_id: string
+        }
+        Returns: boolean
+      }
+      settle_payment_lifecycle: {
+        Args: {
+          p_connection_id: string
+          p_gateway_fee: number
+          p_net_amount: number
+          p_payment_id: string
+          p_transaction_id: string
+          p_transaction_id_external: string
+          p_verified_amount: number
+          p_verified_currency: string
+          p_verified_outcome: string
+        }
+        Returns: boolean
+      }
       settle_payment_transaction: {
         Args: {
           p_connection_id: string
