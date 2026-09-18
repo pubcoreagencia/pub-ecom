@@ -3,7 +3,7 @@
 CURRENT PHASE = ASAAS GATE B / DEPLOYMENT READINESS
 STATUS = CODE READY / EXTERNAL INFRASTRUCTURE BLOCKED
 FOUNDATION = MIGRATIONS 00001 → 00022
-MASTER BASELINE = b8665b7c9c106caa9142d5ca52a463031c424482
+MASTER BASELINE = 0089889f8261476478375caa0cc127d47d8dabb5
 COMMERCIAL RULE = PUB TAKE RATE V1 = 15.00% (COMMERCIAL RULE V1 SNAPSHOT)
 
 ## CLOSED
@@ -18,6 +18,7 @@ COMMERCIAL RULE = PUB TAKE RATE V1 = 15.00% (COMMERCIAL RULE V1 SNAPSHOT)
 - Asaas webhook integration test covers settlement and duplicate-event deduplication.
 - GitHub Actions runner #23 passed Supabase startup/reset, migrations 00001 → 00022, typecheck, full suite and targeted Asaas webhook integration.
 - PR #5 was merged to `master` as commit `b8665b7c9c106caa9142d5ca52a463031c424482`.
+- Deployment-readiness PR #6 was merged to `master` as commit `0089889f8261476478375caa0cc127d47d8dabb5`.
 
 ## CURRENT WORK
 
