@@ -25,13 +25,9 @@ export class PaymentHubService {
   }
 
   private resolveAdapter(providerId: string): PaymentProvider {
-    if (PROVIDER_REGISTRY[providerId]) {
-      return PROVIDER_REGISTRY[providerId];
-    }
+    if (PROVIDER_REGISTRY[providerId]) return PROVIDER_REGISTRY[providerId];
     const factory = BUILTIN_PROVIDERS[providerId];
-    if (factory) {
-      return factory();
-    }
+    if (factory) return factory();
     throw new AppError({
       code: 'INTERNAL_ERROR',
       publicMessage: 'Selected payment provider is not implemented.',
@@ -41,9 +37,6 @@ export class PaymentHubService {
     });
   }
 
-  /**
-   * Process a payment intent for an order
-   */
   public async createPaymentIntent(params: {
     orderId: string;
     method: 'PIX' | 'CREDIT_CARD';
@@ -53,7 +46,6 @@ export class PaymentHubService {
     providerId?: string;
     environment?: 'SANDBOX' | 'PRODUCTION';
   }) {
-    // 1. Fetch order
     const { data: order, error: orderErr } = await this.db
       .from('orders')
       .select('id, order_number, status, total_amount, currency, store_id, organization_id, customer_id')
@@ -80,7 +72,6 @@ export class PaymentHubService {
       });
     }
 
-    // 2. Resolve gateway connection
     const providerId = params.providerId;
     if (!providerId) {
       throw new AppError({
@@ -99,10 +90,8 @@ export class PaymentHubService {
       environment: params.environment
     });
 
-    // Ensure provider adapter is available (registry or built-in factory)
     const adapter = this.resolveAdapter(providerId);
 
-    // 3. Upsert / Fetch payment aggregate (concurrency-safe acquisition)
     let { data: payment } = await this.db
       .from('payments')
       .select('*')
@@ -124,7 +113,6 @@ export class PaymentHubService {
         .single();
 
       if (payErr || !newPayment) {
-        // Concurrency check: If another concurrent request inserted the payment aggregate first (code 23505 / uq_payments_order_id)
         if (payErr?.code === '23505' || payErr?.message?.includes('uq_payments_order_id')) {
           const { data: existingPayment, error: refetchErr } = await this.db
             .from('payments')
@@ -156,7 +144,6 @@ export class PaymentHubService {
       }
     }
 
-    // Now validate existing / acquired payment aggregate state
     if (payment.status === 'PAID' || payment.status === 'REFUNDED' || payment.status === 'PARTIALLY_REFUNDED' || payment.status === 'CHARGEBACK') {
       throw new AppError({
         code: 'CONFLICT',
@@ -167,7 +154,6 @@ export class PaymentHubService {
       });
     }
 
-    // Check concurrency: no transaction in PROCESSING
     const { data: activeTx } = await this.db
       .from('payment_transactions')
       .select('id, status')
@@ -185,7 +171,6 @@ export class PaymentHubService {
       });
     }
 
-    // If aggregate was FAILED, reset to PENDING for new attempt
     if (payment.status === 'FAILED') {
       await this.db
         .from('payments')
@@ -193,7 +178,6 @@ export class PaymentHubService {
         .eq('id', payment.id);
     }
 
-    // 4. Check idempotency for this connection
     const { data: existingTx } = await this.db
       .from('payment_transactions')
       .select('*')
@@ -211,7 +195,6 @@ export class PaymentHubService {
           retryable: true
         });
       }
-      // Replay existing outcome
       return {
         paymentId: payment.id,
         transactionId: existingTx.id,
@@ -221,7 +204,6 @@ export class PaymentHubService {
       };
     }
 
-    // 5. Create new payment_transaction in PROCESSING (Protected by unique partial index uq_payment_tx_single_processing)
     const { data: newTx, error: txErr } = await this.db
       .from('payment_transactions')
       .insert({
@@ -255,7 +237,6 @@ export class PaymentHubService {
       });
     }
 
-    // 6. Fetch real customer if available
     let customerName = 'Guest Customer';
     let customerEmail = 'guest@checkout.local';
     let customerDocument: string | undefined = undefined;
@@ -272,14 +253,12 @@ export class PaymentHubService {
       }
     }
 
-    // 7. Decrypt credentials
     const decryptedCreds = this.cipher.decrypt(connection.encrypted_credentials);
     const credsWithEnv = {
       ...(decryptedCreds as Record<string, unknown>),
       environment: connection.environment
     };
 
-    // 8. Resolve external customer identity if provider supports it
     let externalCustomerId: string | undefined;
     if (adapter.capabilities?.createExternalCustomer) {
       const { externalCustomerId: ecId } = await this.externalResolver.getOrCreateExternalCustomer({
@@ -301,10 +280,7 @@ export class PaymentHubService {
       orderNumber: order.order_number,
       amount: Number(order.total_amount),
       currency: 'BRL',
-      customer: {
-        name: customerName,
-        email: customerEmail,
-      },
+      customer: { name: customerName, email: customerEmail },
       method: params.method,
       cardToken: params.cardToken,
       installments: params.installments,
@@ -314,9 +290,8 @@ export class PaymentHubService {
 
     const result = await adapter.createPayment(input, credsWithEnv);
 
-    // 7. If instant success (e.g. approved credit card), settle immediately via RPC
     if (result.status === 'PAID') {
-      const { error: settleErr } = await this.db.rpc('settle_payment_transaction', {
+      const { error: settleErr } = await this.db.rpc('settle_payment_lifecycle', {
         p_payment_id: payment.id,
         p_transaction_id: newTx.id,
         p_connection_id: connection.id,
@@ -338,7 +313,7 @@ export class PaymentHubService {
         });
       }
     } else if (result.status === 'FAILED') {
-      await this.db.rpc('settle_payment_transaction', {
+      await this.db.rpc('settle_payment_lifecycle', {
         p_payment_id: payment.id,
         p_transaction_id: newTx.id,
         p_connection_id: connection.id,
@@ -350,7 +325,6 @@ export class PaymentHubService {
         p_verified_outcome: 'REJECTED'
       });
     } else {
-      // e.g. PIX PENDING
       await this.db
         .from('payment_transactions')
         .update({
@@ -376,16 +350,12 @@ export class PaymentHubService {
     };
   }
 
-  /**
-   * Handle incoming webhook
-   */
   public async handleWebhook(params: {
     providerId: string;
     connectionId: string;
     headers: Record<string, string>;
     rawBody: string;
   }) {
-    // 1. Fetch connection
     const { data: connection, error: connErr } = await this.db
       .from('gateway_connections')
       .select('*')
@@ -405,7 +375,6 @@ export class PaymentHubService {
 
     const adapter = this.resolveAdapter(params.providerId);
 
-    // 2. Decrypt webhook secret and verify signature
     let webhookSecret = '';
     if (connection.webhook_secret_encrypted) {
       webhookSecret = this.cipher.decrypt(connection.webhook_secret_encrypted);
@@ -422,7 +391,6 @@ export class PaymentHubService {
       });
     }
 
-    // 3. Check deduplication
     const { data: existingEvent } = await this.db
       .from('gateway_webhook_events')
       .select('id, processing_status')
@@ -434,7 +402,6 @@ export class PaymentHubService {
       return { status: 'DEDUP_SKIPPED', eventId: existingEvent.id };
     }
 
-    // 4. Persist event
     let rawJson: any = {};
     try { rawJson = JSON.parse(params.rawBody); } catch { rawJson = { raw: params.rawBody }; }
 
@@ -461,7 +428,6 @@ export class PaymentHubService {
       });
     }
 
-    // 5. Active Re-Fetch and Settle
     const creds = this.cipher.decrypt(connection.encrypted_credentials);
     const credsWithEnv = {
       ...(creds as Record<string, unknown>),
@@ -469,7 +435,6 @@ export class PaymentHubService {
     };
     const paymentStatus = await adapter.getPayment(verification.resourceId, credsWithEnv);
 
-    // Locate transaction by external id
     const { data: tx } = await this.db
       .from('payment_transactions')
       .select('id, payment_id, status, amount')
@@ -478,8 +443,7 @@ export class PaymentHubService {
       .maybeSingle();
 
     if (tx && paymentStatus.status === 'PAID') {
-      const outcome = paymentStatus.status === 'PAID' ? 'SUCCESS' : 'REJECTED';
-      await this.db.rpc('settle_payment_transaction', {
+      await this.db.rpc('settle_payment_lifecycle', {
         p_payment_id: tx.payment_id,
         p_transaction_id: tx.id,
         p_connection_id: connection.id,
@@ -488,7 +452,7 @@ export class PaymentHubService {
         p_verified_currency: paymentStatus.currency,
         p_gateway_fee: paymentStatus.fee || 0,
         p_net_amount: paymentStatus.netAmount || paymentStatus.amount,
-        p_verified_outcome: outcome
+        p_verified_outcome: 'SUCCESS'
       });
 
       await this.db

@@ -1,0 +1,46 @@
+name: PUB ECOM Validation
+
+on:
+  pull_request:
+    branches:
+      - master
+
+concurrency:
+  group: pub-ecom-validation-pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Start local Supabase
+        run: npx supabase@latest start
+
+      - name: Reset database
+        run: npx supabase@latest db reset
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Full test suite
+        run: npm test
+
+      - name: Targeted Asaas webhook test
+        run: npm run test:asaas:webhook
+
+      - name: Stop local Supabase
+        if: always()
+        run: npx supabase@latest stop
