@@ -1,6 +1,9 @@
 name: PUB ECOM Validation
 
 on:
+  push:
+    branches:
+      - fix/payment-lifecycle-v1-atomic-settlement
   pull_request:
     branches:
       - master
