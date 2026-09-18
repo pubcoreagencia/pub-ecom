@@ -49,6 +49,8 @@ export class TenantRepository extends BaseRepository {
       throw domainError;
     }
 
+    if (!domainRow.store_id) return null;
+
     const { data: store, error: storeError } = await this.db
       .from('stores')
       .select('*')
