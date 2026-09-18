@@ -38,18 +38,28 @@ export class TenantRepository extends BaseRepository {
   }
 
   async getStoreByDomain(domain: string): Promise<StoreRow | null> {
-    const { data, error } = await this.db
+    const { data: domainRow, error: domainError } = await this.db
       .from('store_domains')
-      .select('stores(*)')
+      .select('store_id')
       .eq('domain', domain)
       .single();
 
-    if (error && error.code !== 'PGRST116') {
-      throw error;
+    if (domainError) {
+      if (domainError.code === 'PGRST116') return null;
+      throw domainError;
     }
-    
-    // Select embedding returns an array or single object depending on relationship.
-    // 'store_domains' -> 'stores' is many-to-one, so stores is a single object (or null).
-    return data?.stores as StoreRow | null;
+
+    const { data: store, error: storeError } = await this.db
+      .from('stores')
+      .select('*')
+      .eq('id', domainRow.store_id)
+      .single();
+
+    if (storeError) {
+      if (storeError.code === 'PGRST116') return null;
+      throw storeError;
+    }
+
+    return store;
   }
 }
