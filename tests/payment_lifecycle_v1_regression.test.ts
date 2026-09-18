@@ -82,7 +82,7 @@ async function run() {
   const invInsert = await client.from('master_inventory').insert({
     master_variant_id: variant!.id,
     on_hand: 20,
-    reserved: 4,
+    reserved: 0,
     committed: 0
   });
   assert.ok(!invInsert.error, invInsert.error?.message ?? 'inventory insert failed');
@@ -120,6 +120,11 @@ async function run() {
     }).select('id').single()).data;
     if (!reservation) throw new Error('reservation setup failed');
     reservations.push(reservation!.id);
+
+    const reserveUpdate = await client.from('master_inventory')
+      .update({ reserved: 2 })
+      .eq('master_variant_id', variant!.id);
+    assert.ok(!reserveUpdate.error, reserveUpdate.error?.message ?? 'fixture inventory reservation update failed');
 
     const order = (await client.from('orders').insert({
       organization_id: org!.id,
@@ -180,7 +185,7 @@ async function run() {
     const invA = (await client.from('master_inventory')
       .select('reserved, committed')
       .eq('master_variant_id', variant!.id).single()).data;
-    assert.deepStrictEqual(invA, { reserved: 4, committed: 0 });
+    assert.deepStrictEqual(invA, { reserved: 2, committed: 0 });
 
     const resA = (await client.from('inventory_reservations')
       .select('status').eq('id', a.reservation).single()).data;
