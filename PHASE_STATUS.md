@@ -1,50 +1,67 @@
 # PHASE STATUS
 
-CURRENT PHASE = ASAAS GATE B / DEPLOYMENT READINESS
-STATUS = CODE READY / EXTERNAL INFRASTRUCTURE BLOCKED
+CURRENT PHASE = ASAAS GATE B / ZERO-COST PUBLIC DEPLOYMENT
+STATUS = NEON + RENDER READY / REAL ASAAS ROUND-TRIP OPEN
 FOUNDATION = MIGRATIONS 00001 → 00022
-MASTER BASELINE = b8665b7c9c106caa9142d5ca52a463031c424482
+MASTER BASELINE = 0089889f8261476478375caa0cc127d47d8dabb5
+CURRENT BRANCH = feat/neon-render-zero-cost
 COMMERCIAL RULE = PUB TAKE RATE V1 = 15.00% (COMMERCIAL RULE V1 SNAPSHOT)
 
 ## CLOSED
 
 ### Payment Lifecycle V1
-- Atomic `settle_payment_lifecycle()` merged to `master`.
+- Atomic settlement merged to `master`.
 - Rejected payment preserves ACTIVE / RESERVED inventory for retry.
 - Successful settlement transitions ACTIVE reservations to COMMITTED and records COMMIT movement atomically.
 - Cancellation transitions ACTIVE reservations to RELEASED and is idempotent on replay.
 - Direct payment and Asaas webhook settlement paths use the same lifecycle RPC.
 - Executable lifecycle regression covers rejection, success replay and cancellation replay.
 - Asaas webhook integration test covers settlement and duplicate-event deduplication.
-- GitHub Actions runner #23 passed Supabase startup/reset, migrations 00001 → 00022, typecheck, full suite and targeted Asaas webhook integration.
-- PR #5 was merged to `master` as commit `b8665b7c9c106caa9142d5ca52a463031c424482`.
+
+### Zero-cost infrastructure foundation
+- Neon Free project `pub-ecom` provisioned in São Paulo.
+- Neon Auth provisioned.
+- Neon Data API provisioned.
+- Current ECOM migrations `00001` → `00022` applied to Neon.
+- Render Free web service `pub-ecom` exists at `https://pub-ecom.onrender.com`.
 
 ## CURRENT WORK
 
-### Deployment Readiness
-- `npm start` is defined for the Node HTTP server.
-- `GET /health` returns HTTP 200 with `{"status":"ok"}`.
-- Routing regression covers the health probe and unsupported methods.
-- `DEPLOYMENT.md` documents runtime, variables, webhook route, environment separation and Gate B proof.
+### Runtime migration
+- Production database client routes to Neon.
+- Local CI keeps the existing Supabase fallback.
+- `pg` is a runtime dependency.
+- Nested PostgREST relation reads were replaced with explicit lookups in the two affected repositories.
+- PR #8 contains the production runtime migration.
 
 ### Asaas Gate B = REAL PUBLIC WEBHOOK
 OPEN.
 
 Required proof:
-1. Publicly reachable HTTPS webhook endpoint.
-2. Asaas Sandbox Webhook configured for the endpoint.
+1. Public HTTPS endpoint on Render.
+2. Asaas Sandbox webhook configured for the endpoint.
 3. Real sandbox payment transition.
-4. Real POST callback from Asaas received by deployed PUB ECOM.
-5. Signature/token verification accepted.
+4. Real POST callback from Asaas received.
+5. Webhook authentication accepted.
 6. Payment/order/inventory transition committed.
-7. Replayed real event is deduplicated.
+7. Replayed real event deduplicated.
 
-## INFRASTRUCTURE BLOCKER
+## INFRASTRUCTURE
 
-Railway account provisioning currently returns:
-`Free plan resource provision limit exceeded. Please upgrade to provision more resources!`
+Render:
+- Free web service: `pub-ecom`
+- public URL: `https://pub-ecom.onrender.com`
 
-No staging or production deployment is claimed.
+Neon:
+- Free Postgres
+- project: `small-surf-22624516`
+- region: São Paulo
+- PostgreSQL 17
+- 44 public tables currently present after migration.
+
+Railway:
+- PUB ECOM provisioning remains blocked by the account's Free-plan resource provisioning limit.
+- Railway is not part of the production ECOM path.
 
 ## NOT YET IN SCOPE
 
