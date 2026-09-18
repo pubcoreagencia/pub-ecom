@@ -1,12 +1,14 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../../../types/supabase';
-import { env } from '../../config/env';
+import { createNeonClient } from '../neon/compat';
 
-// Privileged server client (uses SERVICE_ROLE key, bypasses RLS)
-// MUST NEVER BE EXPOSED TO BROWSER OR GENERIC ROUTES
+/**
+ * Server-side privileged database client.
+ *
+ * The application layer keeps the existing SupabaseClient contract while
+ * Neon/Postgres becomes the actual persistence layer. Authorization is still
+ * enforced by the service/tenant boundaries already present in the API.
+ */
 export function createAdminClient(): SupabaseClient<Database> {
-  const { SUPABASE_URL } = env.public;
-  const { SUPABASE_SERVICE_ROLE_KEY } = env.server; // Will throw if accessed in browser
-  
-  return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  return createNeonClient() as unknown as SupabaseClient<Database>;
 }
