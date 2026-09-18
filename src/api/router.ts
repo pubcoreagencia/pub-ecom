@@ -21,7 +21,7 @@ async function dispatch(req: Request): Promise<Response> {
     return new Response(null, { status: 405 });
   }
 
-  if (path.startsWith('/api/webhooks/payments/'));
+  if (path.startsWith('/api/webhooks/payments/')) {
     if (['POST'].includes(req.method)) {
       return await handleWebhookRequest(req);
     }
