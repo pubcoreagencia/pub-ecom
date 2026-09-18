@@ -4,13 +4,17 @@
 
 PUB ECOM runs as a Node.js HTTP server.
 
+Build command:
+
+`npm run build`
+
 Start command:
 
 `npm start`
 
-Equivalent command:
+The production start command runs the compiled server:
 
-`npx tsx src/api/server.ts`
+`node dist/src/api/server.js`
 
 The server binds to `PORT`; default is `3000`.
 
