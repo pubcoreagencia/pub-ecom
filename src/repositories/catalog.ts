@@ -71,26 +71,29 @@ export class CatalogRepository extends BaseRepository {
   }
 
   async getStoreVariantDetail(variantId: string): Promise<{ variant: StoreVariantRow, product: StoreProductRow } | null> {
-    const { data, error } = await this.db
+    const { data: variant, error: variantError } = await this.db
       .from('store_product_variants')
-      .select('*, store_products(*)')
+      .select('*')
       .eq('id', variantId)
       .single();
 
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      throw error;
+    if (variantError) {
+      if (variantError.code === 'PGRST116') return null;
+      throw variantError;
     }
-    
-    if (!data.store_products) return null;
 
-    // Type casting since Supabase select with nested joins returns an array or object type that needs inference
-    const product = Array.isArray(data.store_products) ? data.store_products[0] : data.store_products;
-    
-    // Omit the joined relation from the variant result
-    const { store_products, ...variant } = data as any;
-    
-    return { variant: variant as StoreVariantRow, product: product as StoreProductRow };
+    const { data: product, error: productError } = await this.db
+      .from('store_products')
+      .select('*')
+      .eq('id', variant.store_product_id)
+      .single();
+
+    if (productError) {
+      if (productError.code === 'PGRST116') return null;
+      throw productError;
+    }
+
+    return { variant, product };
   }
 
   async getInventory(masterVariantIds: string[]): Promise<MasterInventoryRow[]> {
