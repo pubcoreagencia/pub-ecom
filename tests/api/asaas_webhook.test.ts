@@ -108,10 +108,61 @@ async function run() {
   }).select().single();
   if (connErr || !conn) throw new Error(`Connection setup failed: ${connErr?.message}`);
 
+  // Inventory fixture: webhook settlement must atomically commit an ACTIVE reservation.
+  const { data: supplier } = await client.from('suppliers').insert({
+    name: 'Webhook Inventory Supplier'
+  }).select().single();
+  if (!supplier) throw new Error('Supplier setup failed');
+
+  const { data: masterProduct } = await client.from('master_products').insert({
+    supplier_id: supplier.id,
+    base_sku: `WH-BASE-${Date.now()}`,
+    name: 'Webhook Inventory Product'
+  }).select().single();
+  if (!masterProduct) throw new Error('Master product setup failed');
+
+  const { data: masterVariant } = await client.from('master_product_variants').insert({
+    master_product_id: masterProduct.id,
+    sku: `WH-SKU-${Date.now()}`,
+    cost_price: 50
+  }).select().single();
+  if (!masterVariant) throw new Error('Master variant setup failed');
+
+  await client.from('master_inventory').insert({
+    master_variant_id: masterVariant.id,
+    on_hand: 50,
+    reserved: 2,
+    committed: 0
+  });
+
+  const { data: cart } = await client.from('carts').insert({
+    store_id: store.id,
+    customer_id: cust.id,
+    status: 'COMPLETED'
+  }).select().single();
+  if (!cart) throw new Error('Cart setup failed');
+
+  const { data: checkout } = await client.from('checkouts').insert({
+    cart_id: cart.id,
+    store_id: store.id,
+    status: 'COMPLETED'
+  }).select().single();
+  if (!checkout) throw new Error('Checkout setup failed');
+
+  const { data: reservation } = await client.from('inventory_reservations').insert({
+    master_variant_id: masterVariant.id,
+    checkout_id: checkout.id,
+    quantity: 2,
+    status: 'ACTIVE',
+    expires_at: new Date(Date.now() + 900000).toISOString()
+  }).select().single();
+  if (!reservation) throw new Error('Reservation setup failed');
+
   const { data: order, error: orderErr } = await client.from('orders').insert({
     organization_id: org.id,
     store_id: store.id,
     customer_id: cust.id,
+    checkout_id: checkout.id,
     order_number: `WH-ORD-${Date.now()}`,
     status: 'PENDING_PAYMENT',
     total_amount: 12550,
@@ -242,6 +293,30 @@ async function run() {
       const { data: updatedTx } = await client.from('payment_transactions').select('status').eq('id', tx.id).single();
       assert.strictEqual(updatedTx?.status, 'SUCCESS', 'Payment transaction must be settled to SUCCESS');
 
+      const { data: updatedInventory } = await client
+        .from('master_inventory')
+        .select('reserved, committed')
+        .eq('master_variant_id', masterVariant.id)
+        .single();
+      assert.strictEqual(updatedInventory?.reserved, 0, 'Reserved inventory must be released on settlement');
+      assert.strictEqual(updatedInventory?.committed, 2, 'Committed inventory must increase on settlement');
+
+      const { data: updatedReservation } = await client
+        .from('inventory_reservations')
+        .select('status')
+        .eq('id', reservation.id)
+        .single();
+      assert.strictEqual(updatedReservation?.status, 'COMMITTED', 'Reservation must become COMMITTED atomically');
+
+      const { data: commitMovement } = await client
+        .from('inventory_movements')
+        .select('id, quantity, movement_type, reference_id')
+        .eq('master_variant_id', masterVariant.id)
+        .eq('movement_type', 'COMMIT')
+        .eq('reference_id', order.id)
+        .single();
+      assert.strictEqual(commitMovement?.quantity, 2, 'Settlement must record exactly one COMMIT movement');
+
       console.log('[PASS] Valid event settled successfully via PaymentHubService.handleWebhook');
     }
 
@@ -279,6 +354,14 @@ async function run() {
     await client.from('payments').delete().eq('order_id', order.id);
     await client.from('orders').delete().eq('id', order.id);
     await client.from('gateway_connections').delete().eq('id', conn.id);
+    await client.from('inventory_movements').delete().eq('master_variant_id', masterVariant.id);
+    await client.from('inventory_reservations').delete().eq('id', reservation.id);
+    await client.from('master_inventory').delete().eq('master_variant_id', masterVariant.id);
+    await client.from('master_product_variants').delete().eq('id', masterVariant.id);
+    await client.from('master_products').delete().eq('id', masterProduct.id);
+    await client.from('suppliers').delete().eq('id', supplier.id);
+    await client.from('checkouts').delete().eq('id', checkout.id);
+    await client.from('carts').delete().eq('id', cart.id);
     await client.from('stores').delete().eq('id', store.id);
     await client.from('customers').delete().eq('id', cust.id);
     await client.from('organizations').delete().eq('id', org.id);
