@@ -8,35 +8,27 @@ Store = commercial boundary.
 
 ## Current Phase
 
-PAYMENT LIFECYCLE V1 = IMPLEMENTED & CI VERIFIED.
+ASAAS GATE B / DEPLOYMENT READINESS
 
-Verification commit:
-`035a81bdef6c7a02ea7ee07c639c4c0db1df48ae`
+Payment Lifecycle V1 is merged to `master` at:
+`b8665b7c9c106caa9142d5ca52a463031c424482`
 
-Active branch:
-`fix/payment-lifecycle-v1-atomic-settlement`
-
-Pull Request:
-#5 — `fix(payment): close Payment Lifecycle V1 atomic settlement`
+Current working branch:
+`feat/asaas-gate-b-deploy-readiness`
 
 ## Database
 
 The current schema applies cleanly through migration 00022.
 
 Recent payment lifecycle migrations:
-
 - 00017 = Payment Hub foundation
 - 00018 = Customer gateway identities
 - 00019 = Payment lifecycle inventory correction
-- 00020 = Payment lifecycle inventory correction / inventory reservation lifecycle correction
-- 00021 = Atomic payment + order + inventory settlement
-- 00022 = Idempotent pending-payment cancellation
+- 00020 = reservation lifecycle correction
+- 00021 = atomic payment + order + inventory settlement
+- 00022 = idempotent pending-payment cancellation
 
 ## Payment Lifecycle V1
-
-Core settlement contract:
-
-`settle_payment_lifecycle(payment, transaction, connection, verified outcome)`
 
 SUCCESS:
 - locks payment → transaction → order;
@@ -46,84 +38,99 @@ SUCCESS:
 - marks order PAID;
 - converts ACTIVE inventory reservations to COMMITTED;
 - decrements reserved and increments committed;
-- records one COMMIT movement per reservation;
-- all successful changes occur inside one database transaction;
+- records COMMIT movement;
 - exact replay of the winning transaction is idempotent.
 
 REJECTED:
 - marks transaction FAILED;
 - marks payment FAILED;
-- preserves inventory reservation so the payment can be retried.
+- preserves inventory reservation for retry.
 
-Cancellation contract:
-
-`cancel_pending_payment_order(order)`
-
+Cancellation:
 - CANCELLED is a successful no-op on replay;
 - only PENDING_PAYMENT orders can be cancelled;
 - ACTIVE reservations are released once;
-- RELEASE movement is recorded for each released reservation.
+- RELEASE movement is recorded.
 
 ## Asaas
 
 Asaas Sandbox adapter is implemented for PIX.
 
-Current verified integration:
+Verified local application integration:
 - outbound PIX sandbox payment creation;
 - external customer reconciliation/creation;
 - payment status retrieval;
-- webhook verification and deduplication;
+- webhook verification;
+- webhook deduplication;
 - webhook settlement through the atomic lifecycle RPC.
 
-The Asaas provider production base URL is:
+Sandbox:
+`https://api-sandbox.asaas.com/v3`
+
+Production:
 `https://api.asaas.com/v3`
 
-Sandbox base URL:
-`https://api-sandbox.asaas.com/v3`
+## Deployment Contract
+
+Runtime:
+`npm start`
+
+Server:
+- binds to `PORT`;
+- default port is 3000.
+
+Health:
+`GET /health` → HTTP 200, `{"status":"ok"}`
+
+Webhook:
+`POST /api/webhooks/payments/asaas`
+or connection-specific:
+`POST /api/webhooks/payments/asaas/:connectionId`
+
+Required server configuration:
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `ALLOWED_ORIGINS`
+
+Supabase public compatibility variables:
+- `SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_URL` or `NEXT_PUBLIC_SUPABASE_URL`
+
+Secrets remain outside version control and service-role credentials remain server-only.
 
 ## Testing
 
-GitHub Actions runner #22 verified the current implementation with:
-
+GitHub Actions runner #23 passed:
 - clean local Supabase startup;
-- clean database reset applying migrations 00001 → 00022;
+- clean database reset through migrations 00001 → 00022;
 - TypeScript typecheck;
 - full npm test suite;
-- targeted Asaas webhook integration test.
+- executable Payment Lifecycle V1 regression;
+- targeted Asaas webhook integration.
 
-The executable lifecycle regression verifies:
-- rejection preserves RESERVED;
-- successful settlement commits inventory exactly once;
-- exact successful replay is idempotent;
-- cancellation releases inventory exactly once;
-- exact cancellation replay is idempotent.
+## Asaas Gate B
 
-## Security
+REAL PUBLIC ASAAS WEBHOOK remains OPEN.
 
-- Payment lifecycle RPCs are SECURITY DEFINER with empty search_path.
-- Public/anon/authenticated execution is revoked for lifecycle settlement and cancellation RPCs.
-- Only service_role receives EXECUTE.
-- Gateway credentials remain encrypted.
-- Asaas webhook authentication uses the configured `asaas-access-token` secret.
-- Production secrets are not stored in version control.
+The local webhook integration test does not prove a deployed public HTTPS round-trip.
 
-## External Gate B
+Required external proof:
+1. public HTTPS endpoint;
+2. Asaas Sandbox webhook configured;
+3. real sandbox payment transition;
+4. real POST callback received;
+5. token/signature verification accepted;
+6. payment/order/inventory committed;
+7. replay deduplicated.
 
-REAL PUBLIC ASAAS WEBHOOK remains open.
+## Infrastructure
 
-The current automated webhook test proves the application integration path locally, but it does not prove that Asaas Sandbox can reach a deployed public HTTPS endpoint and trigger settlement in a deployed PUB ECOM instance.
-
-## Deployment
-
-Staging is not yet externally verified.
-Production is not deployed.
-
-The next operational proof is the real public Asaas Sandbox webhook round-trip, followed by deployment hardening and production readiness.
+Railway provisioning is currently blocked by the Free-plan resource provisioning limit. No staging or production deployment is claimed.
 
 ## Git
 
 Remote:
 https://github.com/pubcoreagencia/pub-ecom.git
 
-Current working branch:
-`fix/payment-lifecycle-v1-atomic-settlement`
+`master` baseline:
+`b8665b7c9c106caa9142d5ca52a463031c424482`
