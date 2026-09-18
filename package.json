@@ -6,8 +6,9 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "npx tsx tests/foundation.test.ts && npx tsx tests/identity.test.ts && npx tsx tests/tenant.test.ts && npx tsx tests/catalog.test.ts && npx tsx tests/media.test.ts && npx tsx tests/commerce.test.ts && npx tsx tests/routing.test.ts && npx tsx tests/checkout.test.ts && npx tsx tests/api_checkout.test.ts && npx tsx tests/order_execution.test.ts && npx tsx tests/payment_hub_foundation.test.ts",
+    "test": "npx tsx tests/foundation.test.ts && npx tsx tests/identity.test.ts && npx tsx tests/tenant.test.ts && npx tsx tests/catalog.test.ts && npx tsx tests/media.test.ts && npx tsx tests/commerce.test.ts && npx tsx tests/routing.test.ts && npx tsx tests/checkout.test.ts && npx tsx tests/api_checkout.test.ts && npx tsx tests/order_execution.test.ts && npx tsx tests/payment_hub_foundation.test.ts && npx tsx tests/api/asaas_webhook.test.ts",
     "test:asaas:sandbox": "npx tsx tests/services/payment_hub/providers/asaas_sandbox.test.ts",
+    "test:asaas:webhook": "npx tsx tests/api/asaas_webhook.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
@@ -21,11 +22,9 @@
     "@types/node": "^26.2.0",
     "@types/jest": "^29.5.12",
     "@types/pg": "^8.21.0",
-    "@types/ws": "^8.18.1",
     "nock": "^13.5.4",
     "pg": "^8.23.0",
     "tsx": "^4.23.12",
-    "typescript": "^7.0.2",
     "ws": "^8.21.3"
   }
 }
