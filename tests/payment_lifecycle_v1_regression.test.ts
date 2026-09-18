@@ -13,7 +13,8 @@ async function getClient() {
     const status = JSON.parse(raw.substring(raw.indexOf('{')));
     key = status.SERVICE_ROLE_KEY;
   }
-  return createClient<Database>(url, key!, { auth: { persistSession: false } });
+  if (!key) throw new Error('SERVICE_ROLE_KEY unavailable');
+  return createClient<Database>(url, key, { auth: { persistSession: false } });
 }
 
 async function run() {
@@ -99,7 +100,7 @@ async function run() {
       customer_id: customer.id,
       status: 'COMPLETED'
     }).select('id').single()).data;
-    assert.ok(cart);
+    if (!cart) throw new Error('cart setup failed');
     carts.push(cart.id);
 
     const checkout = (await client.from('checkouts').insert({
@@ -107,7 +108,7 @@ async function run() {
       store_id: store.id,
       status: 'COMPLETED'
     }).select('id').single()).data;
-    assert.ok(checkout);
+    if (!checkout) throw new Error('checkout setup failed');
     checkouts.push(checkout.id);
 
     const reservation = (await client.from('inventory_reservations').insert({
@@ -117,7 +118,7 @@ async function run() {
       status: 'ACTIVE',
       expires_at: new Date(Date.now() + 900000).toISOString()
     }).select('id').single()).data;
-    assert.ok(reservation);
+    if (!reservation) throw new Error('reservation setup failed');
     reservations.push(reservation.id);
 
     const order = (await client.from('orders').insert({
@@ -130,7 +131,7 @@ async function run() {
       total_amount: 100,
       currency: 'BRL'
     }).select('id').single()).data;
-    assert.ok(order);
+    if (!order) throw new Error('order setup failed');
     orders.push(order.id);
 
     const payment = (await client.from('payments').insert({
@@ -141,7 +142,7 @@ async function run() {
       status: 'PENDING',
       payment_method: 'PIX'
     }).select('id').single()).data;
-    assert.ok(payment);
+    if (!payment) throw new Error('payment setup failed');
     payments.push(payment.id);
 
     const tx = (await client.from('payment_transactions').insert({
@@ -154,7 +155,7 @@ async function run() {
       status: 'PROCESSING',
       transaction_id_external: 'pay-life-' + tag
     }).select('id').single()).data;
-    assert.ok(tx);
+    if (!tx) throw new Error('tx setup failed');
     txs.push(tx.id);
 
     return { checkout: checkout.id, reservation: reservation.id, order: order.id, payment: payment.id, tx: tx.id };
